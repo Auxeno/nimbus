@@ -1,0 +1,8 @@
+*.ipynb
+*pycache*
+.DS_Store
+models/*
+!/notebooks/*.ipynb
+!models/.gitkeep
+*.md
+!readme.md
