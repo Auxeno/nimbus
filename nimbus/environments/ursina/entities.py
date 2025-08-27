@@ -200,10 +200,8 @@ class IconUI(Entity):
         self.base_color = hex_to_rgba(ursina_config.icon_color)
 
         # Alpha multipliers for on/off screen
-        self.onscreen_alpha_multiplier = hex_to_rgba(
-            "#FFFFFF22"
-        )  # Reduces alpha significantly
-        self.offscreen_alpha_multiplier = hex_to_rgba("#FFFFFFFF")  # Full alpha
+        self.onscreen_alpha_multiplier = hex_to_rgba("#FFFFFF22")
+        self.offscreen_alpha_multiplier = hex_to_rgba("#FFFFFFFF")
 
         # Screen boundary limits for icon clamping
         self.screen_limit = Vec3(0.74, 0.45, 0)
@@ -227,7 +225,6 @@ class IconUI(Entity):
                 visible=False,
             )
 
-            # Distance text - anchored to icon with larger scale
             self.distance_text = Text(
                 text="",
                 origin=(0, 0),
@@ -247,22 +244,17 @@ class IconUI(Entity):
             self.offscreen_indicator.visible = False
             return
 
-        # Get current waypoint position
         current_idx = int(route.current_idx)
         waypoint_pos_ned = route.positions[current_idx]
 
-        # Calculate distance in km
         delta = waypoint_pos_ned - aircraft.body.position
         distance_m = float(jnp.linalg.norm(delta))
         distance_km = distance_m / 1000.0
 
-        # Update distance text
         self.distance_text.text = f"{distance_km:.1f} km"
 
-        # Get waypoint screen position
         screen_pos = waypoint_entity.screen_position
 
-        # Check if on screen
         on_screen = (
             -self.screen_limit.x <= screen_pos.x <= self.screen_limit.x
             and -self.screen_limit.y <= screen_pos.y <= self.screen_limit.y
@@ -387,7 +379,7 @@ class Trail(Entity):
         ursina_config: UrsinaConfig,
         **kwargs,
     ) -> None:
-        super().__init__(parent=parent, **kwargs)
+        super().__init__(parent=parent, shader=unlit_shader, **kwargs)  # type: ignore
         self.set_two_sided(True)
 
         self.ursina_config = ursina_config
