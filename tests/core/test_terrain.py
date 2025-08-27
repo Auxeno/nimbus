@@ -83,8 +83,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=config.mountain_gain,
         bump_gain=config.bump_gain,
         padding=config.padding,
-        rim_width=config.rim_width,
-        split_octave=config.split_octave,
     )
     assert result_1.shape == (config.resolution, config.resolution)
     assert jnp.all(result_1 >= 0.0) and jnp.all(result_1 <= 1.0)  # Values in [0, 1]
@@ -102,8 +100,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=custom_config.mountain_gain,
         bump_gain=custom_config.bump_gain,
         padding=custom_config.padding,
-        rim_width=custom_config.rim_width,
-        split_octave=custom_config.split_octave,
     )
     assert result_2.shape == (64, 64)
     assert jnp.all(result_2 >= 0.0) and jnp.all(result_2 <= 1.0)
@@ -120,8 +116,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=padded_config.mountain_gain,
         bump_gain=padded_config.bump_gain,
         padding=padded_config.padding,
-        rim_width=padded_config.rim_width,
-        split_octave=padded_config.split_octave,
     )
     assert result_3.shape == (40, 40)  # 32 + 2*4
     assert jnp.all(result_3 >= 0.0) and jnp.all(result_3 <= 1.0)
@@ -138,8 +132,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=small_config.mountain_gain,
         bump_gain=small_config.bump_gain,
         padding=small_config.padding,
-        rim_width=small_config.rim_width,
-        split_octave=small_config.split_octave,
     )
     result_4b = generate_heightmap(
         key,
@@ -151,8 +143,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=small_config.mountain_gain,
         bump_gain=small_config.bump_gain,
         padding=small_config.padding,
-        rim_width=small_config.rim_width,
-        split_octave=small_config.split_octave,
     )
     assert jnp.allclose(result_4a, result_4b, atol=EPS)
 
@@ -168,8 +158,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=small_config.mountain_gain,
         bump_gain=small_config.bump_gain,
         padding=small_config.padding,
-        rim_width=small_config.rim_width,
-        split_octave=small_config.split_octave,
     )
     result_5b = generate_heightmap(
         key2,
@@ -181,8 +169,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=small_config.mountain_gain,
         bump_gain=small_config.bump_gain,
         padding=small_config.padding,
-        rim_width=small_config.rim_width,
-        split_octave=small_config.split_octave,
     )
     assert not jnp.allclose(result_5a, result_5b, atol=1e-3)  # Should be different
 
@@ -198,8 +184,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=single_octave_config.mountain_gain,
         bump_gain=single_octave_config.bump_gain,
         padding=single_octave_config.padding,
-        rim_width=single_octave_config.rim_width,
-        split_octave=single_octave_config.split_octave,
     )
     assert result_6.shape == (16, 16)
     assert jnp.all(result_6 >= 0.0) and jnp.all(result_6 <= 1.0)
@@ -216,8 +200,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=high_freq_config.mountain_gain,
         bump_gain=high_freq_config.bump_gain,
         padding=high_freq_config.padding,
-        rim_width=high_freq_config.rim_width,
-        split_octave=high_freq_config.split_octave,
     )
     assert result_7.shape == (16, 16)
     assert jnp.all(result_7 >= 0.0) and jnp.all(result_7 <= 1.0)
@@ -234,14 +216,12 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=gain_config.mountain_gain,
         bump_gain=gain_config.bump_gain,
         padding=gain_config.padding,
-        rim_width=gain_config.rim_width,
-        split_octave=gain_config.split_octave,
     )
     assert result_8.shape == (16, 16)
     assert jnp.all(result_8 >= 0.0) and jnp.all(result_8 <= 1.0)
 
     # Edge case 4 - radial taper verification (edges should be close to 0.5)
-    taper_config = TerrainConfig(resolution=32, rim_width=4)
+    taper_config = TerrainConfig(resolution=32)
     result_9 = generate_heightmap(
         key,
         resolution=taper_config.resolution,
@@ -252,8 +232,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
         mountain_gain=taper_config.mountain_gain,
         bump_gain=taper_config.bump_gain,
         padding=taper_config.padding,
-        rim_width=taper_config.rim_width,
-        split_octave=taper_config.split_octave,
     )
     edges = jnp.concatenate(
         [
@@ -284,8 +262,6 @@ def test_generate_heightmap(jit_mode: str) -> None:
             mountain_gain=vmap_config.mountain_gain,
             bump_gain=vmap_config.bump_gain,
             padding=vmap_config.padding,
-            rim_width=vmap_config.rim_width,
-            split_octave=vmap_config.split_octave,
         )
 
     generate_heightmap_vmap = jax.vmap(generate_heightmap_batch)
@@ -321,8 +297,6 @@ def test_generate_heightmap_parameters(jit_mode: str) -> None:
         mountain_gain=low_pers_config.mountain_gain,
         bump_gain=low_pers_config.bump_gain,
         padding=low_pers_config.padding,
-        rim_width=low_pers_config.rim_width,
-        split_octave=low_pers_config.split_octave,
     )
     high_persistence = generate_heightmap(
         key,
@@ -334,8 +308,6 @@ def test_generate_heightmap_parameters(jit_mode: str) -> None:
         mountain_gain=high_pers_config.mountain_gain,
         bump_gain=high_pers_config.bump_gain,
         padding=high_pers_config.padding,
-        rim_width=high_pers_config.rim_width,
-        split_octave=high_pers_config.split_octave,
     )
     assert jnp.all(low_persistence >= 0.0) and jnp.all(low_persistence <= 1.0)
     assert jnp.all(high_persistence >= 0.0) and jnp.all(high_persistence <= 1.0)
@@ -354,8 +326,6 @@ def test_generate_heightmap_parameters(jit_mode: str) -> None:
         mountain_gain=low_lac_config.mountain_gain,
         bump_gain=low_lac_config.bump_gain,
         padding=low_lac_config.padding,
-        rim_width=low_lac_config.rim_width,
-        split_octave=low_lac_config.split_octave,
     )
     high_lacunarity = generate_heightmap(
         key,
@@ -367,15 +337,13 @@ def test_generate_heightmap_parameters(jit_mode: str) -> None:
         mountain_gain=high_lac_config.mountain_gain,
         bump_gain=high_lac_config.bump_gain,
         padding=high_lac_config.padding,
-        rim_width=high_lac_config.rim_width,
-        split_octave=high_lac_config.split_octave,
     )
     assert jnp.all(low_lacunarity >= 0.0) and jnp.all(low_lacunarity <= 1.0)
     assert jnp.all(high_lacunarity >= 0.0) and jnp.all(high_lacunarity <= 1.0)
 
-    # Test split_octave parameter
-    split_early_config = TerrainConfig(resolution=16, octaves=4, split_octave=1)
-    split_late_config = TerrainConfig(resolution=16, octaves=4, split_octave=3)
+    # Test split_octave parameter (removed - no longer supported)
+    split_early_config = TerrainConfig(resolution=16, octaves=4)
+    split_late_config = TerrainConfig(resolution=16, octaves=4)
 
     split_early = generate_heightmap(
         key,
@@ -387,8 +355,6 @@ def test_generate_heightmap_parameters(jit_mode: str) -> None:
         mountain_gain=split_early_config.mountain_gain,
         bump_gain=split_early_config.bump_gain,
         padding=split_early_config.padding,
-        rim_width=split_early_config.rim_width,
-        split_octave=split_early_config.split_octave,
     )
     split_late = generate_heightmap(
         key,
@@ -400,15 +366,13 @@ def test_generate_heightmap_parameters(jit_mode: str) -> None:
         mountain_gain=split_late_config.mountain_gain,
         bump_gain=split_late_config.bump_gain,
         padding=split_late_config.padding,
-        rim_width=split_late_config.rim_width,
-        split_octave=split_late_config.split_octave,
     )
     assert jnp.all(split_early >= 0.0) and jnp.all(split_early <= 1.0)
     assert jnp.all(split_late >= 0.0) and jnp.all(split_late <= 1.0)
 
-    # Test rim_width parameter
-    narrow_rim_config = TerrainConfig(resolution=32, rim_width=2)
-    wide_rim_config = TerrainConfig(resolution=32, rim_width=12)
+    # Test rim_width parameter (removed - no longer supported)
+    narrow_rim_config = TerrainConfig(resolution=32)
+    wide_rim_config = TerrainConfig(resolution=32)
 
     narrow_rim = generate_heightmap(
         key,
@@ -420,8 +384,6 @@ def test_generate_heightmap_parameters(jit_mode: str) -> None:
         mountain_gain=narrow_rim_config.mountain_gain,
         bump_gain=narrow_rim_config.bump_gain,
         padding=narrow_rim_config.padding,
-        rim_width=narrow_rim_config.rim_width,
-        split_octave=narrow_rim_config.split_octave,
     )
     wide_rim = generate_heightmap(
         key,
@@ -433,8 +395,6 @@ def test_generate_heightmap_parameters(jit_mode: str) -> None:
         mountain_gain=wide_rim_config.mountain_gain,
         bump_gain=wide_rim_config.bump_gain,
         padding=wide_rim_config.padding,
-        rim_width=wide_rim_config.rim_width,
-        split_octave=wide_rim_config.split_octave,
     )
     assert jnp.all(narrow_rim >= 0.0) and jnp.all(narrow_rim <= 1.0)
     assert jnp.all(wide_rim >= 0.0) and jnp.all(wide_rim <= 1.0)

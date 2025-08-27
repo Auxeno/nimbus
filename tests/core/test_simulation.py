@@ -409,8 +409,6 @@ def test_step(jit_mode: str) -> None:
         mountain_gain=terrain_config.mountain_gain,
         bump_gain=terrain_config.bump_gain,
         padding=terrain_config.padding,
-        rim_width=terrain_config.rim_width,
-        split_octave=terrain_config.split_octave,
     )
     key_route = jax.random.PRNGKey(100)
     scenario_config = ScenarioConfig()

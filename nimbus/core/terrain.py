@@ -159,7 +159,11 @@ def generate_heightmap(
     Terrain values map to world elevation: higher values = terrain up,
     lower values = terrain down, relative to reference level.
     """
+
+    # Width of outer rim [pixels]
     rim_width = resolution // 8
+
+    # Octave at which surface detail starts
     split_octave = octaves // 2
 
     # Build a 512 entry permutation table
