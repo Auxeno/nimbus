@@ -49,11 +49,14 @@ class Body:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
-class PDControllerState:
-    """Generic PD controller state."""
+class PIDControllerState:
+    """Generic PID controller state."""
 
     previous_error: FloatScalar
     """Previous error value for derivative term."""
+
+    integral: FloatScalar
+    """Accumulated error for integral term."""
 
 
 @jax.tree_util.register_dataclass
@@ -98,8 +101,8 @@ class Aircraft:
     controls: Controls
     """Pilot control inputs (throttle, aileron, elevator, rudder)."""
 
-    g_limiter_pd: PDControllerState
-    """PD controller state for G-force limiter."""
+    g_limiter_pid: PIDControllerState
+    """PID controller state for G-force limiter."""
 
 
 @jax.tree_util.register_dataclass

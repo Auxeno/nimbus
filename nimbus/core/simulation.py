@@ -227,14 +227,14 @@ def step(
     )
 
     # Apply G-limiter to aircraft controls
-    adjusted_controls, new_pd_state = apply_g_limiter(
+    adjusted_controls, new_pid_state = apply_g_limiter(
         aircraft=aircraft,
         controls=aircraft.controls,
         aircraft_config=config.aircraft,
         physics_config=config.physics,
         dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
     )
-    aircraft = replace(aircraft, controls=adjusted_controls, g_limiter_pd=new_pd_state)
+    aircraft = replace(aircraft, controls=adjusted_controls, g_limiter_pid=new_pid_state)
 
     # Aircraft dynamics update
     aircraft = jax.lax.cond(

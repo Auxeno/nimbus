@@ -24,7 +24,7 @@ from nimbus.core.interface import (
 from nimbus.core.primitives import EPS, FLOAT_DTYPE, INT_DTYPE
 from nimbus.core.quaternion import from_euler_zyx
 from nimbus.core.scenario import ScenarioConfig, generate_route
-from nimbus.core.state import Aircraft, Body, Controls, Meta, PDControllerState
+from nimbus.core.state import Aircraft, Body, Controls, Meta, PIDControllerState
 from nimbus.core.terrain import generate_heightmap
 
 
@@ -55,8 +55,9 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     aircraft_config = AircraftConfig()
@@ -84,8 +85,9 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
         meta=meta,
         body=body_hover,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     result_2 = calculate_translational_acceleration(
@@ -106,8 +108,9 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
         meta=meta,
         body=body_high,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     result_3 = calculate_translational_acceleration(
@@ -129,11 +132,11 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
     )(throttles)
     bodies = jax.vmap(lambda _: body)(jnp.arange(3))
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
 
     accel_vmap = jax.vmap(
@@ -175,8 +178,9 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     aircraft_config = AircraftConfig()
@@ -200,8 +204,9 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls_neutral,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     result_2 = calculate_angular_acceleration(
@@ -222,8 +227,9 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
         meta=meta,
         body=body_rotating,
         controls=controls_neutral,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     result_3 = calculate_angular_acceleration(
@@ -245,11 +251,11 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
     )(ailerons)
     bodies = jax.vmap(lambda _: body)(jnp.arange(3))
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
 
     ang_accel_vmap = jax.vmap(
@@ -288,8 +294,9 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     aircraft_config = AircraftConfig()
@@ -338,11 +345,11 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
     bodies = jax.vmap(Body)(positions, velocities, orientations, angular_velocities)
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
 
     derivatives_vmap = jax.vmap(
@@ -392,8 +399,9 @@ def test_terrain_collision(jit_mode: str) -> None:
         meta=meta,
         body=body_above,
         controls=Controls.default(),
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
@@ -412,8 +420,9 @@ def test_terrain_collision(jit_mode: str) -> None:
         meta=meta,
         body=body_underground,
         controls=Controls.default(),
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
@@ -432,8 +441,9 @@ def test_terrain_collision(jit_mode: str) -> None:
         meta=meta,
         body=body_edge,
         controls=Controls.default(),
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
@@ -461,11 +471,11 @@ def test_terrain_collision(jit_mode: str) -> None:
     bodies = jax.vmap(Body)(positions, velocities, orientations, angular_velocities)
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(4))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(4))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(4))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
 
     collision_vmap = jax.vmap(lambda a: terrain_collision(a, heightmap, map_config))
@@ -504,8 +514,9 @@ def test_calculate_g_force(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     aircraft_config = AircraftConfig()
@@ -529,8 +540,9 @@ def test_calculate_g_force(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls_high_g,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     result_2 = calculate_g_force(aircraft_high_g, aircraft_config, physics_config)
@@ -550,11 +562,11 @@ def test_calculate_g_force(jit_mode: str) -> None:
     )(throttles)
     bodies = jax.vmap(lambda _: body)(jnp.arange(3))
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
 
     g_force_vmap = jax.vmap(
@@ -588,8 +600,9 @@ def test_waypoint_hit(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=Controls.default(),
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     key = jax.random.PRNGKey(42)
@@ -611,8 +624,9 @@ def test_waypoint_hit(jit_mode: str) -> None:
         meta=meta,
         body=body_far,
         controls=Controls.default(),
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
@@ -639,8 +653,9 @@ def test_waypoint_hit(jit_mode: str) -> None:
         meta=meta,
         body=body_near,
         controls=Controls.default(),
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 

@@ -9,7 +9,7 @@ from chex import PRNGKey
 from . import quaternion
 from .config import TerrainConfig
 from .primitives import FLOAT_DTYPE, INT_DTYPE, FloatScalar, Matrix
-from .state import Aircraft, Body, Controls, Meta, PDControllerState, Route, Simulation
+from .state import Aircraft, Body, Controls, Meta, PIDControllerState, Route, Simulation
 from .terrain import generate_heightmap
 
 
@@ -118,8 +118,9 @@ def generate_simulation(key: PRNGKey, scenario_config: ScenarioConfig) -> Simula
             angular_velocity=angular_velocity.astype(FLOAT_DTYPE),
         ),
         controls=Controls.default(),
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 

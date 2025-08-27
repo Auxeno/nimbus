@@ -85,17 +85,23 @@ class MapConfig:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
-class PDControllerConfig:
-    """Configuration for PD controller."""
+class PIDControllerConfig:
+    """Configuration for PID controller."""
 
     kp: float
     """Proportional gain."""
+
+    ki: float
+    """Integral gain."""
 
     kd: float
     """Derivative gain."""
 
     max_correction: float
     """Maximum control correction magnitude."""
+
+    integral_limit: float
+    """Maximum absolute value of integral term to prevent windup."""
 
 
 @jax.tree_util.register_dataclass
@@ -139,10 +145,10 @@ class AircraftConfig:
     g_limit_min: float = -3.0
     """Minimum negative G-force limit."""
 
-    g_limiter_controller_config: PDControllerConfig = PDControllerConfig(
-        kp=2.0, kd=0.2, max_correction=1.2
+    g_limiter_controller_config: PIDControllerConfig = PIDControllerConfig(
+        kp=2.0, ki=1.0, kd=0.5, max_correction=1.2, integral_limit=2.0
     )
-    """PD controller configuration for G-limiter."""
+    """PID controller configuration for G-limiter."""
 
 
 @jax.tree_util.register_dataclass

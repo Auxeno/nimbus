@@ -238,11 +238,11 @@ def test_freeze_aircraft(jit_mode: str) -> None:
     bodies = jax.vmap(Body)(positions, velocities, orientations, angular_velocities)
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
 
     freeze_aircraft_vmap = jax.vmap(freeze_aircraft)
@@ -374,11 +374,11 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
     bodies = jax.vmap(Body)(positions, velocities, orientations, angular_velocities)
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
 
     step_aircraft_rk4_vmap = jax.vmap(
@@ -563,11 +563,11 @@ def test_step(jit_mode: str) -> None:
     bodies = jax.vmap(Body)(positions, velocities, orientations, angular_velocities)
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
     times = jnp.zeros(3, dtype=FLOAT_DTYPE)
     simulations = jax.vmap(Simulation)(aircraft_batch, times)
@@ -711,11 +711,11 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
     bodies = jax.vmap(Body)(positions, velocities, orientations, angular_velocities)
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
-    g_limiter_pd_batch = jax.vmap(
-        lambda _: PDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    g_limiter_pid_batch = jax.vmap(
+        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pd_batch
+        metas, bodies, controls_batch, g_limiter_pid_batch
     )
 
     step_aircraft_euler_vmap = jax.vmap(

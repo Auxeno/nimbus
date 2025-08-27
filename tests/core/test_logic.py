@@ -5,11 +5,11 @@ from dataclasses import replace
 import jax
 import jax.numpy as jnp
 
-from nimbus.core.config import AircraftConfig, PDControllerConfig, PhysicsConfig
+from nimbus.core.config import AircraftConfig, PIDControllerConfig, PhysicsConfig
 from nimbus.core.logic import apply_g_limiter
 from nimbus.core.primitives import EPS, FLOAT_DTYPE, INT_DTYPE
 from nimbus.core.quaternion import from_euler_zyx
-from nimbus.core.state import Aircraft, Body, Controls, Meta, PDControllerState
+from nimbus.core.state import Aircraft, Body, Controls, Meta, PIDControllerState
 
 
 def test_apply_g_limiter_no_correction(jit_mode: str) -> None:
@@ -39,8 +39,9 @@ def test_apply_g_limiter_no_correction(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     aircraft_config = AircraftConfig()
@@ -66,8 +67,9 @@ def test_apply_g_limiter_no_correction(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls_moderate,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
@@ -108,15 +110,16 @@ def test_apply_g_limiter_positive_g_violation(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     # Very low G-limit to ensure violation
     aircraft_config = AircraftConfig(
         g_limit_max=0.5,  # Extremely low limit
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.5, kd=0.0, max_correction=1.0
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.5, ki=0.0, kd=0.0, max_correction=1.0, integral_limit=2.0
         ),
     )
     physics_config = PhysicsConfig()
@@ -150,8 +153,9 @@ def test_apply_g_limiter_positive_g_violation(jit_mode: str) -> None:
         meta=meta,
         body=body_extreme,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
@@ -192,15 +196,16 @@ def test_apply_g_limiter_negative_g_violation(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     # Very tight negative G-limit
     aircraft_config = AircraftConfig(
         g_limit_min=0.2,  # Positive limit to force negative-G violation
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.5, kd=0.0, max_correction=1.0
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.5, ki=0.0, kd=0.0, max_correction=1.0, integral_limit=2.0
         ),
     )
     physics_config = PhysicsConfig()
@@ -247,23 +252,24 @@ def test_apply_g_limiter_pd_controller(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
     # Low proportional gain with very low G-limit
     config_low_kp = AircraftConfig(
         g_limit_max=0.3,  # Extremely low limit to force violation
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.1, kd=0.0, max_correction=1.0
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.1, ki=0.0, kd=0.0, max_correction=1.0, integral_limit=2.0
         ),
     )
     # High proportional gain
     config_high_kp = AircraftConfig(
         g_limit_max=0.3,  # Same limit
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.5, kd=0.0, max_correction=1.0
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.5, ki=0.0, kd=0.0, max_correction=1.0, integral_limit=2.0
         ),
     )
     physics_config = PhysicsConfig()
@@ -286,13 +292,14 @@ def test_apply_g_limiter_pd_controller(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(1.0, dtype=FLOAT_DTYPE)  # Previous error
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(1.0, dtype=FLOAT_DTYPE),  # Previous error
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     config_with_kd = AircraftConfig(
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.1, kd=0.05, max_correction=1.0
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.1, ki=0.0, kd=0.05, max_correction=1.0, integral_limit=2.0
         ),
     )
 
@@ -322,8 +329,9 @@ def test_apply_g_limiter_pd_controller(jit_mode: str) -> None:
             elevator=jnp.array(0.9, dtype=FLOAT_DTYPE),
             rudder=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     config_low_max = AircraftConfig(
@@ -370,13 +378,14 @@ def test_apply_g_limiter_elevator_saturation(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls_high,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     aircraft_config = AircraftConfig(
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.5, kd=0.0, max_correction=0.8
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.5, ki=0.0, kd=0.0, max_correction=0.8, integral_limit=2.0
         ),
     )
     physics_config = PhysicsConfig()
@@ -411,8 +420,9 @@ def test_apply_g_limiter_elevator_saturation(jit_mode: str) -> None:
         meta=meta,
         body=body_neg,
         controls=controls_low,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
@@ -517,8 +527,9 @@ def test_apply_g_limiter_aircraft_configurations(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
@@ -526,16 +537,16 @@ def test_apply_g_limiter_aircraft_configurations(jit_mode: str) -> None:
     fighter_config = AircraftConfig(
         g_limit_min=-3.0,
         g_limit_max=9.0,
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.1, kd=0.01, max_correction=0.5
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.1, ki=0.0, kd=0.01, max_correction=0.5, integral_limit=2.0
         ),
     )
     # Transport config - lower G-limits
     transport_config = AircraftConfig(
         g_limit_min=-1.0,
         g_limit_max=2.5,
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.1, kd=0.01, max_correction=0.5
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.1, ki=0.0, kd=0.01, max_correction=0.5, integral_limit=2.0
         ),
     )
     physics_config = PhysicsConfig()
@@ -557,8 +568,8 @@ def test_apply_g_limiter_aircraft_configurations(jit_mode: str) -> None:
     aerobatic_config = AircraftConfig(
         g_limit_min=-6.0,
         g_limit_max=12.0,
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.05, kd=0.005, max_correction=0.3
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.05, ki=0.0, kd=0.005, max_correction=0.3, integral_limit=2.0
         ),
     )
 
@@ -598,8 +609,9 @@ def test_apply_g_limiter_multi_step(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
     aircraft_config = AircraftConfig()
@@ -730,8 +742,8 @@ def test_apply_g_limiter_extreme_values(jit_mode: str) -> None:
     )
     aircraft_config = AircraftConfig(
         g_limit_max=12.0,
-        g_limiter_controller_config=PDControllerConfig(
-            kp=0.5, kd=0.05, max_correction=1.0
+        g_limiter_controller_config=PIDControllerConfig(
+            kp=0.5, ki=0.0, kd=0.05, max_correction=1.0, integral_limit=2.0
         ),
     )
     physics_config = PhysicsConfig()
@@ -761,8 +773,9 @@ def test_apply_g_limiter_extreme_values(jit_mode: str) -> None:
         meta=meta,
         body=body_slow,
         controls=controls,
-        g_limiter_pd=PDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
 
