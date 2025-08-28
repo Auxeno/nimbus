@@ -113,7 +113,7 @@ class AircraftConfig:
     """Aircraft mass [kg]."""
 
     surface_areas: tuple[float, float, float] = (10.0, 20.0, 30.0)
-    """Reference wing, tailplane, and fin surface areas [m^2]."""
+    """Reference front, side, and wing surface areas [m^2]."""
 
     max_thrust: float = 200_000.0
     """Maximum available engine thrust [N]."""

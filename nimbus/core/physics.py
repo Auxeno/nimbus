@@ -53,7 +53,7 @@ def calculate_dynamic_pressure(
     Parameters
     ----------
     airspeed: FloatScalar
-        Indicated airspeed [m/s].
+        True airspeed [m/s].
     air_density: FloatScalar
         Density of air [kg/m^3].
 
@@ -317,7 +317,7 @@ def calculate_drag(
     orientation: Quaternion
         Body to world orientation quaternion.
     airspeed: FloatScalar
-        Indicated airspeed [m/s].
+        True airspeed [m/s].
     dynamic_pressure: FloatScalar
         Aerodynamic pressure on body [N/m^2].
     coef_drag: FloatScalar
@@ -427,7 +427,7 @@ def calculate_control_moments(
     orientation: Quaternion
         Body to world orientation quaternion.
     airspeed: FloatScalar
-        Indicated airspeed [m/s].
+        True airspeed [m/s].
     dynamic_pressure: FloatScalar
         Aerodynamic pressure on body [N/m^2].
     aileron: FloatScalar
