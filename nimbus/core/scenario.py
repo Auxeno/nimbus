@@ -48,26 +48,40 @@ def _sample_vec3(key: PRNGKey, spec: Vector3Spec) -> jnp.ndarray:
 
 
 @dataclass(frozen=True)
-class ScenarioConfig:
-    position: Vector3Spec = (
-        Uniform(-1000.0, 1000.0),
-        Uniform(-1000.0, 1000.0),
-        Fixed(-500.0),
-    )
+class InitialConditions:
+    position: Vector3Spec
+    """Initial aircraft position in NED world-frame [m]."""
 
-    velocity: Vector3Spec = (Fixed(150.0), Fixed(0.0), Fixed(0.0))
+    velocity: Vector3Spec
+    """Initial aircraft velocity in NED world-frame [m/s]."""
 
-    # Euler angles: yaw (Z), pitch (Y), roll (X) [degrees]
-    orientation_euler: Vector3Spec = (Fixed(0.0), Fixed(0.0), Fixed(0.0))
+    orientation_euler: Vector3Spec
+    """Initial aircraft Euler angles: yaw (Z), pitch (Y), roll (X) [degrees]."""
 
-    angular_velocity: Vector3Spec = (Fixed(0.0), Fixed(0.0), Fixed(0.0))
+    angular_velocity: Vector3Spec
+    """Initial aircraft angular velocity in FRD body-frame [rad/s]"""
 
-    waypoints: tuple[Vector3Spec, ...] = (
-        (Fixed(1500.0), Fixed(0.0), Fixed(-500.0)),
-        (Fixed(2000.0), Fixed(0.0), Fixed(-500.0)),
-        (Fixed(2500.0), Fixed(0.0), Fixed(-500.0)),
-        (Fixed(3000.0), Fixed(0.0), Fixed(-500.0)),
-    )
+    waypoints: tuple[Vector3Spec, ...]
+    """Waypoint positions in NED world-frame [m]."""
+
+    @classmethod
+    def default(cls) -> "InitialConditions":
+        return cls(
+            position=(
+                Uniform(-1000.0, 1000.0),
+                Uniform(-1000.0, 1000.0),
+                Fixed(-500.0),
+            ),
+            velocity=(Fixed(150.0), Fixed(0.0), Fixed(0.0)),
+            orientation_euler=(Fixed(0.0), Fixed(0.0), Fixed(0.0)),
+            angular_velocity=(Fixed(0.0), Fixed(0.0), Fixed(0.0)),
+            waypoints=(
+                (Fixed(1500.0), Fixed(0.0), Fixed(-500.0)),
+                (Fixed(2000.0), Fixed(0.0), Fixed(-500.0)),
+                (Fixed(2500.0), Fixed(0.0), Fixed(-500.0)),
+                (Fixed(3000.0), Fixed(0.0), Fixed(-500.0)),
+            ),
+        )
 
 
 def generate_terrain_map(key: PRNGKey, terrain_config: TerrainConfig) -> Matrix:
@@ -84,11 +98,11 @@ def generate_terrain_map(key: PRNGKey, terrain_config: TerrainConfig) -> Matrix:
     )
 
 
-def generate_route(key: PRNGKey, scenario_config: ScenarioConfig) -> Route:
-    num_waypoints = len(scenario_config.waypoints)
+def generate_route(key: PRNGKey, initial_conditions: InitialConditions) -> Route:
+    num_waypoints = len(initial_conditions.waypoints)
     keys = jax.random.split(key, num_waypoints)
 
-    sampled = [_sample_vec3(k, wp) for k, wp in zip(keys, scenario_config.waypoints)]
+    sampled = [_sample_vec3(k, wp) for k, wp in zip(keys, initial_conditions.waypoints)]
     positions = jnp.stack(sampled, axis=0).astype(FLOAT_DTYPE)
 
     return Route(
@@ -98,14 +112,17 @@ def generate_route(key: PRNGKey, scenario_config: ScenarioConfig) -> Route:
     )
 
 
-def generate_simulation(key: PRNGKey, scenario_config: ScenarioConfig) -> Simulation:
+def generate_simulation(
+    key: PRNGKey,
+    initial_conditions: InitialConditions,
+) -> Simulation:
     key_position, key_velocity, key_omega, key_orientation = jax.random.split(key, 4)
 
-    position = _sample_vec3(key_position, scenario_config.position)
-    velocity = _sample_vec3(key_velocity, scenario_config.velocity)
-    angular_velocity = _sample_vec3(key_omega, scenario_config.angular_velocity)
+    position = _sample_vec3(key_position, initial_conditions.position)
+    velocity = _sample_vec3(key_velocity, initial_conditions.velocity)
+    angular_velocity = _sample_vec3(key_omega, initial_conditions.angular_velocity)
 
-    eul_deg = _sample_vec3(key_orientation, scenario_config.orientation_euler)
+    eul_deg = _sample_vec3(key_orientation, initial_conditions.orientation_euler)
     yaw, pitch, roll = jnp.deg2rad(eul_deg)
     quat = quaternion.from_euler_zyx(yaw, pitch, roll).astype(FLOAT_DTYPE)
 
@@ -120,7 +137,7 @@ def generate_simulation(key: PRNGKey, scenario_config: ScenarioConfig) -> Simula
         controls=Controls.default(),
         g_limiter_pid=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
-            integral=jnp.array(0.0, dtype=FLOAT_DTYPE)
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
 
@@ -129,11 +146,11 @@ def generate_simulation(key: PRNGKey, scenario_config: ScenarioConfig) -> Simula
 
 def generate_scenario(
     key: PRNGKey,
-    scenario_config: ScenarioConfig,
+    initial_conditions: InitialConditions,
     terrain_config: TerrainConfig,
 ) -> tuple[Simulation, Matrix, Route]:
     key_map, key_route, key_simulation = jax.random.split(key, 3)
     heightmap = generate_terrain_map(key_map, terrain_config)
-    route = generate_route(key_route, scenario_config)
-    simulation = generate_simulation(key_simulation, scenario_config)
+    route = generate_route(key_route, initial_conditions)
+    simulation = generate_simulation(key_simulation, initial_conditions)
     return simulation, heightmap, route

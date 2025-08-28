@@ -11,7 +11,7 @@ from nimbus.core.config import (
 )
 from nimbus.core.primitives import EPS, FLOAT_DTYPE, INT_DTYPE
 from nimbus.core.quaternion import from_euler_zyx
-from nimbus.core.scenario import ScenarioConfig, generate_route
+from nimbus.core.scenario import InitialConditions, generate_route
 from nimbus.core.simulation import (
     freeze_aircraft,
     set_controls,
@@ -239,7 +239,10 @@ def test_freeze_aircraft(jit_mode: str) -> None:
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
     g_limiter_pid_batch = jax.vmap(
-        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
+        lambda _: PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
+        )
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
         metas, bodies, controls_batch, g_limiter_pid_batch
@@ -375,7 +378,10 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
     g_limiter_pid_batch = jax.vmap(
-        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
+        lambda _: PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
+        )
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
         metas, bodies, controls_batch, g_limiter_pid_batch
@@ -411,8 +417,8 @@ def test_step(jit_mode: str) -> None:
         padding=terrain_config.padding,
     )
     key_route = jax.random.PRNGKey(100)
-    scenario_config = ScenarioConfig()
-    route = generate_route(key_route, scenario_config)
+    initial_conditions = InitialConditions()
+    route = generate_route(key_route, initial_conditions)
 
     # Standard case 1 - normal flight step
     meta = Meta(
@@ -564,7 +570,10 @@ def test_step(jit_mode: str) -> None:
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
     g_limiter_pid_batch = jax.vmap(
-        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
+        lambda _: PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
+        )
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
         metas, bodies, controls_batch, g_limiter_pid_batch
@@ -574,8 +583,8 @@ def test_step(jit_mode: str) -> None:
 
     # Create routes for batch processing
     route_keys = jax.random.split(jax.random.PRNGKey(200), 3)
-    scenario_config = ScenarioConfig()
-    routes = jax.vmap(lambda k: generate_route(k, scenario_config))(route_keys)
+    initial_conditions = InitialConditions()
+    routes = jax.vmap(lambda k: generate_route(k, initial_conditions))(route_keys)
     heightmaps = jnp.tile(heightmap[None, :, :], (3, 1, 1))
 
     step_vmap = jax.vmap(lambda sim, hm, rt: step(sim, hm, rt, config))
@@ -712,7 +721,10 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
     controls_batch = jax.vmap(lambda _: Controls.default())(jnp.arange(3))
     g_limiter_pid_batch = jax.vmap(
-        lambda _: PIDControllerState(previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE), integral=jnp.array(0.0, dtype=FLOAT_DTYPE))
+        lambda _: PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
+        )
     )(jnp.arange(3))
     aircraft_batch = jax.vmap(Aircraft)(
         metas, bodies, controls_batch, g_limiter_pid_batch

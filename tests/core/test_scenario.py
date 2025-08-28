@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from nimbus.core.config import TerrainConfig
 from nimbus.core.primitives import EPS, FLOAT_DTYPE, INT_DTYPE
 from nimbus.core.scenario import (
-    ScenarioConfig,
+    InitialConditions,
     generate_simulation,
     generate_terrain_map,
 )
@@ -18,8 +18,8 @@ def test_generate_simulation(jit_mode: str) -> None:
     key = jax.random.PRNGKey(42)
 
     # Standard case 1 - single simulation generation
-    scenario_config = ScenarioConfig()
-    result_1 = generate_simulation(key, scenario_config)
+    initial_conditions = InitialConditions()
+    result_1 = generate_simulation(key, initial_conditions)
 
     # Check aircraft state
     assert result_1.aircraft.meta.active == jnp.array(True, dtype=bool)
@@ -61,7 +61,7 @@ def test_generate_simulation(jit_mode: str) -> None:
     assert result_1.time == jnp.array(0.0, dtype=FLOAT_DTYPE)
 
     # Standard case 2 - deterministic with same key
-    result_2 = generate_simulation(key, scenario_config)
+    result_2 = generate_simulation(key, initial_conditions)
 
     # Should produce identical results with same key
     assert jnp.allclose(
@@ -70,7 +70,7 @@ def test_generate_simulation(jit_mode: str) -> None:
 
     # Standard case 3 - different with different key
     key2 = jax.random.PRNGKey(123)
-    result_3 = generate_simulation(key2, scenario_config)
+    result_3 = generate_simulation(key2, initial_conditions)
 
     # Position should be different (except altitude)
     assert not jnp.isclose(
@@ -90,7 +90,7 @@ def test_generate_simulation(jit_mode: str) -> None:
     # Test with vmap - generate 5 simulations
     keys = jax.random.split(key, 5)
     generate_simulation_vmap = jax.vmap(
-        lambda k: generate_simulation(k, scenario_config)
+        lambda k: generate_simulation(k, initial_conditions)
     )
     vmap_results = generate_simulation_vmap(keys)
 
