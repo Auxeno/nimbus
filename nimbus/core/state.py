@@ -122,14 +122,26 @@ class Route:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class Wind:
+    """Wind state with mean and gust components."""
+
+    mean: Vector3
+    """Mean wind velocity in NED world frame [m/s]."""
+
+    gust: Vector3
+    """Gust/turbulence velocity centered at zero [m/s]."""
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class Simulation:
     """Top-level container for simulation state."""
 
     aircraft: Aircraft
     """Aircraft entity in the simulation."""
 
-    wind_velocity: Vector3
-    """Wind velocity in NED world frame [m/s]."""
+    wind: Wind
+    """Wind state with mean and gust components."""
 
     time: FloatScalar
     """Simulation time in seconds."""

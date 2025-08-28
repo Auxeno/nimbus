@@ -165,6 +165,21 @@ class RouteConfig:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class WindConfig:
+    """Configuration for wind gust generation."""
+
+    gust_intensity: float = 5.0
+    """RMS intensity of wind gusts [m/s]."""
+
+    gust_duration: float = 5.0
+    """Average duration of gusts (OU time constant) [s]."""
+
+    vertical_damping: float = 0.2
+    """Damping factor for vertical gusts relative to horizontal."""
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class SimulationConfig:
     """Configuration for simulation."""
 
@@ -179,6 +194,9 @@ class SimulationConfig:
 
     route: RouteConfig = RouteConfig()
     """Config for waypoint route."""
+
+    wind: WindConfig = WindConfig()
+    """Config for wind gust generation."""
 
     dt: float = 1 / 60
     """Fixed time step delta [s]."""

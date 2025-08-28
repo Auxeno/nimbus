@@ -46,10 +46,10 @@ class UrsinaConfig:
     trail_color: str = color_1
     trail_width: float = 0.4
     trail_fade_duration: float = 6.0
-    trail_min_spacing: float = 0.5
-    trail_update_interval: float = 0.02
+    trail_min_spacing: float = 0.05
+    trail_update_interval: float = 0.001
     trail_default_alpha: float = 0.7
-    trail_segments: int = 150
+    trail_segments: int = 1000
 
     icon_color: str = white + alpha_90
 

@@ -9,7 +9,7 @@ from chex import PRNGKey
 from . import quaternion
 from .config import TerrainConfig
 from .primitives import FLOAT_DTYPE, INT_DTYPE, FloatScalar, Matrix
-from .state import Aircraft, Body, Controls, Meta, PIDControllerState, Route, Simulation
+from .state import Aircraft, Body, Controls, Meta, PIDControllerState, Route, Simulation, Wind
 from .terrain import generate_heightmap
 
 
@@ -143,7 +143,7 @@ def generate_simulation(
     )
     wind_north = wind_speed * jnp.cos(wind_dir + jnp.pi)
     wind_east = wind_speed * jnp.sin(wind_dir + jnp.pi)
-    wind_velocity = jnp.array([wind_north, wind_east, 0.0], dtype=FLOAT_DTYPE)
+    mean_wind = jnp.array([wind_north, wind_east, 0.0], dtype=FLOAT_DTYPE)
 
     eul_deg = _sample_vec3(key_orientation, initial_conditions.orientation_euler)
     yaw, pitch, roll = jnp.deg2rad(eul_deg)
@@ -164,9 +164,15 @@ def generate_simulation(
         ),
     )
 
+    # Initialize wind with mean and zero gusts
+    wind = Wind(
+        mean=mean_wind,
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
+
     return Simulation(
         aircraft=aircraft,
-        wind_velocity=wind_velocity,
+        wind=wind,
         time=jnp.array(0.0, dtype=FLOAT_DTYPE),
     )
 

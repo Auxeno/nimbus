@@ -4,11 +4,21 @@ from dataclasses import replace
 
 import jax
 import jax.numpy as jnp
+from chex import PRNGKey
 
 from . import physics, quaternion, spatial
-from .config import AircraftConfig, MapConfig, PhysicsConfig, RouteConfig
-from .primitives import FLOAT_DTYPE, INT_DTYPE, BoolScalar, Matrix, Vector3, norm_3
-from .state import Aircraft, Route
+from .config import AircraftConfig, MapConfig, PhysicsConfig, RouteConfig, WindConfig
+from .primitives import (
+    FLOAT_DTYPE,
+    INT_DTYPE,
+    BoolScalar,
+    FloatScalar,
+    Matrix,
+    Vector3,
+    norm_3,
+)
+from .state import Aircraft, Route, Wind
+from .wind import calculate_wind
 
 
 def calculate_translational_acceleration(
@@ -355,3 +365,41 @@ def next_waypoint(route: Route, loop: BoolScalar) -> Route:
     )
 
     return replace(route, current_idx=next_idx, visited=visited)
+
+
+def update_wind(
+    key: PRNGKey,
+    wind: Wind,
+    wind_config: WindConfig,
+    dt: FloatScalar,
+) -> "Wind":
+    """
+    Update wind state by evolving the gust component.
+
+    Parameters
+    ----------
+    key : PRNGKey
+        JAX random key for stochastic updates.
+    wind : Wind
+        Current wind state with mean and gust components.
+    wind_config : WindConfig
+        Configuration for wind gust generation.
+    dt : FloatScalar
+        Time step [s].
+
+    Returns
+    -------
+    Wind
+        Updated wind state with new gust component.
+    """
+
+    new_gust = calculate_wind(
+        key,
+        wind.gust,
+        jnp.array(wind_config.gust_intensity, dtype=FLOAT_DTYPE),
+        jnp.array(wind_config.gust_duration, dtype=FLOAT_DTYPE),
+        jnp.array(wind_config.vertical_damping, dtype=FLOAT_DTYPE),
+        dt,
+    )
+
+    return Wind(mean=wind.mean, gust=new_gust)

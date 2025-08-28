@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import jax
 import jax.numpy as jnp
+from chex import PRNGKey
 
 from . import quaternion
 from .config import AircraftConfig, PhysicsConfig, SimulationConfig
@@ -11,6 +12,7 @@ from .interface import (
     aircraft_state_derivatives,
     next_waypoint,
     terrain_collision,
+    update_wind,
     waypoint_hit,
 )
 from .logic import apply_g_limiter
@@ -202,11 +204,20 @@ def freeze_aircraft(aircraft: Aircraft) -> Aircraft:
 
 
 def step(
+    key: PRNGKey,
     simulation: Simulation,
     heightmap: Matrix,
     route: Route,
     config: SimulationConfig,
 ) -> tuple[Simulation, Route]:
+    # Update wind
+    wind = update_wind(
+        key,
+        simulation.wind,
+        config.wind,
+        jnp.array(config.dt, dtype=FLOAT_DTYPE),
+    )
+
     # Terrain collision
     colliding = terrain_collision(
         aircraft=simulation.aircraft,
@@ -236,7 +247,7 @@ def step(
     adjusted_controls, new_pid_state = apply_g_limiter(
         aircraft=aircraft,
         controls=aircraft.controls,
-        wind_velocity=simulation.wind_velocity,
+        wind_velocity=wind.mean + wind.gust,
         aircraft_config=config.aircraft,
         physics_config=config.physics,
         dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
@@ -250,7 +261,7 @@ def step(
         aircraft.meta.active,
         lambda: step_aircraft_rk4(
             aircraft=aircraft,
-            wind_velocity=simulation.wind_velocity,
+            wind_velocity=wind.mean + wind.gust,
             aircraft_config=config.aircraft,
             physics_config=config.physics,
             dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
@@ -260,4 +271,4 @@ def step(
 
     time = simulation.time + jnp.array(config.dt, dtype=FLOAT_DTYPE)
 
-    return replace(simulation, aircraft=aircraft, time=time), route
+    return replace(simulation, aircraft=aircraft, wind=wind, time=time), route
