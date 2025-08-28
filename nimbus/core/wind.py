@@ -1,4 +1,8 @@
-"""Wind and turbulence generation using Ornstein-Uhlenbeck process."""
+"""
+Wind and turbulence generation using Ornstein-Uhlenbeck process.
+
+All quantities use SI units and NED world-frame unless noted.
+"""
 
 import jax
 import jax.numpy as jnp
@@ -16,48 +20,47 @@ def step_ornstein_uhlenbeck(
     scale_factors: Vector3,
 ) -> Vector3:
     """
-    Update a vector state using the exact discrete-time OU process.
-
-    This function uses the *stationary RMS* parametrization:
-      x_{t+dt} = exp(-theta*dt) * x_t + (rms * sqrt(1 - exp(-2*theta*dt))) * eps,
-    where eps ~ N(0, I). If different RMS per-axis are desired, pass them via
-    `scale_factors` (e.g., [1, 1, vertical_scale]) and they will multiply the
-    base RMS for the noise term only.
+    Update a vector state using the exact discrete-time Ornstein-Uhlenbeck process.
 
     Parameters
     ----------
-    key : PRNGKey
+    key: PRNGKey
         JAX random key for noise generation.
-    current : Vector3
-        Current state vector (e.g., gust velocity in NED) [m/s].
-    mean_reversion_rate : FloatScalar
-        OU rate theta = 1 / tau, where tau is the time constant [1/s].
-    stationary_rms : FloatScalar
-        Target stationary RMS (standard deviation) for the *unscaled* components [m/s].
-    dt : FloatScalar
+    current: Vector3
+        Current state vector [m/s].
+    mean_reversion_rate: FloatScalar
+        OU rate theta = 1/tau, where tau is time constant [1/s].
+    stationary_rms: FloatScalar
+        Target stationary RMS for unscaled components [m/s].
+    dt: FloatScalar
         Time step [s].
-    scale_factors : Vector3
-        Per-axis multipliers for the stationary RMS (unitless). For isotropic
-        horizontal with reduced vertical, use [1.0, 1.0, vertical_scale].
+    scale_factors: Vector3
+        Per-axis multipliers for the stationary RMS (unitless).
 
     Returns
     -------
-    Vector3
-        Updated state vector.
+    current: Vector3
+        Updated state vector [m/s].
+
+    Notes
+    -----
+    Uses exact discrete-time OU: x_{t+dt} = exp(-theta*dt) * x_t + noise,
+    where noise amplitude ensures stationary std = stationary_rms.
+    For anisotropic turbulence use scale_factors=[1, 1, vertical_scale].
     """
     theta = mean_reversion_rate
     decay = jnp.exp(-theta * dt)
 
-    # Exact discrete-time noise standard deviation so that stationary std = stationary_rms.
+    # Exact discrete-time noise ensures stationary std equals stationary_rms
     base_std = stationary_rms * jnp.sqrt(1.0 - decay**2)
 
-    # One 3-vector draw (independent components)
+    # Independent gaussian noise for each component
     eps = jax.random.normal(key, (3,), dtype=FLOAT_DTYPE)
 
-    # Apply per-axis scaling to the *noise* (do not scale the state itself)
+    # Per-axis scaling applied to noise only
     noise = eps * base_std * scale_factors
 
-    # OU update: exponential decay + additive noise
+    # OU update: exponential decay plus additive noise
     return current * decay + noise
 
 
@@ -70,39 +73,38 @@ def calculate_wind(
     dt: FloatScalar,
 ) -> Vector3:
     """
-    Evolve the gust (zero-mean turbulence) as a vector OU process.
-
-    Notes
-    -----
-    - `gust_intensity` is interpreted as the *stationary RMS* of the horizontal
-      gust components [m/s]. Vertical RMS is `vertical_damping * gust_intensity`.
-    - Horizontal isotropy emerges by using the same RMS for north/east and not
-      re-randomizing direction each step (no angle sampling). This preserves
-      temporal correlation in both magnitude and direction, reducing jitter.
+    Evolve turbulent gust velocity using vector Ornstein-Uhlenbeck process.
 
     Parameters
     ----------
-    key : PRNGKey
+    key: PRNGKey
         JAX random key for noise generation.
-    gust : Vector3
+    gust: Vector3
         Current gust velocity in NED [m/s].
-    gust_intensity : FloatScalar
+    gust_intensity: FloatScalar
         Stationary RMS of horizontal gusts [m/s].
-    gust_duration : FloatScalar
-        OU time constant tau [s].
-    vertical_damping : FloatScalar
+    gust_duration: FloatScalar
+        Time constant tau for temporal correlation [s].
+    vertical_damping: FloatScalar
         Vertical RMS scale relative to horizontal (unitless).
-    dt : FloatScalar
+    dt: FloatScalar
         Time step [s].
 
     Returns
     -------
-    Vector3
+    gust: Vector3
         Updated gust velocity in NED [m/s].
+
+    Notes
+    -----
+    Horizontal components use full gust_intensity RMS.
+    Vertical component uses vertical_damping * gust_intensity RMS.
+    Temporal correlation preserves both magnitude and direction.
     """
+    # Mean reversion rate from time constant
     theta = 1.0 / gust_duration
 
-    # Per-axis RMS scaling: isotropic horizontal, reduced vertical
+    # Isotropic horizontal, reduced vertical turbulence
     scale_factors = jnp.array([1.0, 1.0, vertical_damping], dtype=FLOAT_DTYPE)
 
     return step_ornstein_uhlenbeck(
