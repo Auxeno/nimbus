@@ -60,7 +60,7 @@ class UrsinaRuntime:
         scene.fog_density = self.ursina_config.fog_density
 
         aircraft = AircraftEntity(
-            state=self.simulation.aircraft,
+            simulation=self.simulation,
             simulation_config=self.simulation_config,
             ursina_config=self.ursina_config,
         )

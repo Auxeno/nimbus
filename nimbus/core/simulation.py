@@ -14,7 +14,7 @@ from .interface import (
     waypoint_hit,
 )
 from .logic import apply_g_limiter
-from .primitives import FLOAT_DTYPE, FloatScalar, Matrix
+from .primitives import FLOAT_DTYPE, FloatScalar, Matrix, Vector3
 from .state import Aircraft, Body, Controls, Meta, Route, Simulation
 
 
@@ -40,6 +40,7 @@ def set_controls(simulation: Simulation, controls: Controls) -> Simulation:
 
 def step_aircraft_euler(
     aircraft: Aircraft,
+    wind_velocity: Vector3,
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
     dt: FloatScalar,
@@ -51,6 +52,8 @@ def step_aircraft_euler(
     ----------
     aircraft : Aircraft
         Current aircraft state.
+    wind_velocity : Vector3
+        Wind velocity in NED world frame [m/s].
     aircraft_config : AircraftConfig
         Aircraft configuration parameters.
     physics_config : PhysicsConfig
@@ -65,7 +68,7 @@ def step_aircraft_euler(
     """
     # Derivatives at the current state
     dx, dv, dq, dw = aircraft_state_derivatives(
-        aircraft, aircraft_config, physics_config
+        aircraft, wind_velocity, aircraft_config, physics_config
     )
 
     return replace(
@@ -81,6 +84,7 @@ def step_aircraft_euler(
 
 def step_aircraft_rk4(
     aircraft: Aircraft,
+    wind_velocity: Vector3,
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
     dt: FloatScalar,
@@ -92,6 +96,8 @@ def step_aircraft_rk4(
     ----------
     aircraft : Aircraft
         Current aircraft state.
+    wind_velocity : Vector3
+        Wind velocity in NED world frame [m/s].
     aircraft_config : AircraftConfig
         Aircraft configuration parameters.
     physics_config : PhysicsConfig
@@ -106,7 +112,7 @@ def step_aircraft_rk4(
     """
     # k1: derivatives at the current state
     dx_1, dv_1, dq_1, dw_1 = aircraft_state_derivatives(
-        aircraft, aircraft_config, physics_config
+        aircraft, wind_velocity, aircraft_config, physics_config
     )
 
     # k2: derivatives at half-step using k1
@@ -120,7 +126,7 @@ def step_aircraft_rk4(
         ),
     )
     dx_2, dv_2, dq_2, dw_2 = aircraft_state_derivatives(
-        aircraft_2, aircraft_config, physics_config
+        aircraft_2, wind_velocity, aircraft_config, physics_config
     )
 
     # k3: derivatives at half-step using k2
@@ -134,7 +140,7 @@ def step_aircraft_rk4(
         ),
     )
     dx_3, dv_3, dq_3, dw_3 = aircraft_state_derivatives(
-        aircraft_3, aircraft_config, physics_config
+        aircraft_3, wind_velocity, aircraft_config, physics_config
     )
 
     # k4: derivatives at full step using k3
@@ -148,7 +154,7 @@ def step_aircraft_rk4(
         ),
     )
     dx_4, dv_4, dq_4, dw_4 = aircraft_state_derivatives(
-        aircraft_4, aircraft_config, physics_config
+        aircraft_4, wind_velocity, aircraft_config, physics_config
     )
 
     # Combine weighted sum (RK4 formula)
@@ -230,17 +236,21 @@ def step(
     adjusted_controls, new_pid_state = apply_g_limiter(
         aircraft=aircraft,
         controls=aircraft.controls,
+        wind_velocity=simulation.wind_velocity,
         aircraft_config=config.aircraft,
         physics_config=config.physics,
         dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
     )
-    aircraft = replace(aircraft, controls=adjusted_controls, g_limiter_pid=new_pid_state)
+    aircraft = replace(
+        aircraft, controls=adjusted_controls, g_limiter_pid=new_pid_state
+    )
 
     # Aircraft dynamics update
     aircraft = jax.lax.cond(
         aircraft.meta.active,
         lambda: step_aircraft_rk4(
             aircraft=aircraft,
+            wind_velocity=simulation.wind_velocity,
             aircraft_config=config.aircraft,
             physics_config=config.physics,
             dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),

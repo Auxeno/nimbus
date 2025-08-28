@@ -128,5 +128,8 @@ class Simulation:
     aircraft: Aircraft
     """Aircraft entity in the simulation."""
 
+    wind_velocity: Vector3
+    """Wind velocity in NED world frame [m/s]."""
+
     time: FloatScalar
     """Simulation time in seconds."""

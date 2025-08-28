@@ -61,6 +61,12 @@ class InitialConditions:
     angular_velocity: Vector3Spec
     """Initial aircraft angular velocity in FRD body-frame [rad/s]"""
 
+    wind_speed: ScalarSpec
+    """Wind speed [m/s]."""
+
+    wind_direction: ScalarSpec
+    """Wind direction [degrees] - direction wind is coming FROM (meteorological convention)."""
+
     waypoints: tuple[Vector3Spec, ...]
     """Waypoint positions in NED world-frame [m]."""
 
@@ -75,6 +81,8 @@ class InitialConditions:
             velocity=(Fixed(150.0), Fixed(0.0), Fixed(0.0)),
             orientation_euler=(Fixed(0.0), Fixed(0.0), Fixed(0.0)),
             angular_velocity=(Fixed(0.0), Fixed(0.0), Fixed(0.0)),
+            wind_speed=Uniform(0.0, 10.0),
+            wind_direction=Uniform(0.0, 360.0),
             waypoints=(
                 (Fixed(1500.0), Fixed(0.0), Fixed(-500.0)),
                 (Fixed(2000.0), Fixed(0.0), Fixed(-500.0)),
@@ -116,11 +124,26 @@ def generate_simulation(
     key: PRNGKey,
     initial_conditions: InitialConditions,
 ) -> Simulation:
-    key_position, key_velocity, key_omega, key_orientation = jax.random.split(key, 4)
+    (
+        key_position,
+        key_velocity,
+        key_omega,
+        key_orientation,
+        key_wind_speed,
+        key_wind_dir,
+    ) = jax.random.split(key, 6)
 
     position = _sample_vec3(key_position, initial_conditions.position)
     velocity = _sample_vec3(key_velocity, initial_conditions.velocity)
     angular_velocity = _sample_vec3(key_omega, initial_conditions.angular_velocity)
+
+    wind_speed = _sample_scalar(key_wind_speed, initial_conditions.wind_speed)
+    wind_dir = jnp.deg2rad(
+        _sample_scalar(key_wind_dir, initial_conditions.wind_direction)
+    )
+    wind_north = wind_speed * jnp.cos(wind_dir + jnp.pi)
+    wind_east = wind_speed * jnp.sin(wind_dir + jnp.pi)
+    wind_velocity = jnp.array([wind_north, wind_east, 0.0], dtype=FLOAT_DTYPE)
 
     eul_deg = _sample_vec3(key_orientation, initial_conditions.orientation_euler)
     yaw, pitch, roll = jnp.deg2rad(eul_deg)
@@ -141,7 +164,11 @@ def generate_simulation(
         ),
     )
 
-    return Simulation(aircraft=aircraft, time=jnp.array(0.0, dtype=FLOAT_DTYPE))
+    return Simulation(
+        aircraft=aircraft,
+        wind_velocity=wind_velocity,
+        time=jnp.array(0.0, dtype=FLOAT_DTYPE),
+    )
 
 
 def generate_scenario(

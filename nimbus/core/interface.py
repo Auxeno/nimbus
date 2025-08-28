@@ -13,6 +13,7 @@ from .state import Aircraft, Route
 
 def calculate_translational_acceleration(
     aircraft: Aircraft,
+    wind_velocity: Vector3,
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
 ) -> Vector3:
@@ -23,6 +24,8 @@ def calculate_translational_acceleration(
     ----------
     aircraft : Aircraft
         Current aircraft state including position, velocity, and orientation.
+    wind_velocity : Vector3
+        Wind velocity in NED world frame [m/s].
     aircraft_config : AircraftConfig
         Aircraft configuration parameters including mass, drag coefficients.
     physics_config : PhysicsConfig
@@ -42,6 +45,7 @@ def calculate_translational_acceleration(
     aero_forces = physics.calculate_aero_forces(
         velocity=aircraft.body.velocity,
         orientation=aircraft.body.orientation,
+        wind_velocity=wind_velocity,
         air_density=air_density,
         coef_drag=jnp.array(aircraft_config.coef_drag, dtype=FLOAT_DTYPE),
         coef_lift=jnp.array(aircraft_config.coef_lift, dtype=FLOAT_DTYPE),
@@ -137,6 +141,7 @@ def calculate_angular_acceleration(
 
 def aircraft_state_derivatives(
     aircraft: Aircraft,
+    wind_velocity: Vector3,
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
 ) -> tuple[Vector3, Vector3, Vector3, Vector3]:
@@ -147,6 +152,8 @@ def aircraft_state_derivatives(
     ----------
     aircraft : Aircraft
         Current aircraft state.
+    wind_velocity : Vector3
+        Wind velocity in NED world frame [m/s].
     aircraft_config : AircraftConfig
         Aircraft configuration parameters.
     physics_config : PhysicsConfig
@@ -162,7 +169,7 @@ def aircraft_state_derivatives(
         - d_angular_velocity: angular acceleration in FRD body frame [rad/s^2]
     """
     acceleration = calculate_translational_acceleration(
-        aircraft, aircraft_config, physics_config
+        aircraft, wind_velocity, aircraft_config, physics_config
     )
 
     angular_acceleration = calculate_angular_acceleration(
@@ -214,6 +221,7 @@ def terrain_collision(
 
 def calculate_g_force(
     aircraft: Aircraft,
+    wind_velocity: Vector3,
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
 ) -> Vector3:
@@ -224,6 +232,8 @@ def calculate_g_force(
     ----------
     aircraft : Aircraft
         Current aircraft state including position, velocity, and orientation.
+    wind_velocity : Vector3
+        Wind velocity in NED world frame [m/s].
     aircraft_config : AircraftConfig
         Aircraft configuration parameters including mass and force coefficients.
     physics_config : PhysicsConfig
@@ -243,6 +253,7 @@ def calculate_g_force(
     aero_forces = physics.calculate_aero_forces(
         velocity=aircraft.body.velocity,
         orientation=aircraft.body.orientation,
+        wind_velocity=wind_velocity,
         air_density=air_density,
         coef_drag=jnp.array(aircraft_config.coef_drag, dtype=FLOAT_DTYPE),
         coef_lift=jnp.array(aircraft_config.coef_lift, dtype=FLOAT_DTYPE),

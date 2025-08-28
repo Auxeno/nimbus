@@ -179,6 +179,7 @@ class TextUI(Entity):
         # Flight metrics
         alpha, speed, g_force, heading, agl, vs = compute_flight_metrics(
             simulation_state.aircraft,
+            simulation_state.wind_velocity,
             heightmap,
             self.config.aircraft,
             self.config.physics,
@@ -561,7 +562,7 @@ class TerrainSurface:
 class AircraftEntity(Entity):
     def __init__(
         self,
-        state: Aircraft,
+        simulation: Simulation,
         simulation_config: SimulationConfig,
         ursina_config: UrsinaConfig,
     ) -> None:
@@ -590,17 +591,18 @@ class AircraftEntity(Entity):
             ursina_config=ursina_config,
         )
 
-        self.update_entity(state)
+        self.update_entity(simulation)
 
-    def update_entity(self, aircraft: Aircraft):
-        if aircraft.meta.active:
-            self.position = ned_to_eun(aircraft.body.position)
-            orientation_enu = ned_quat_to_eun_quat(aircraft.body.orientation)
+    def update_entity(self, simulation: Simulation):
+        if simulation.aircraft.meta.active:
+            self.position = ned_to_eun(simulation.aircraft.body.position)
+            orientation_enu = ned_quat_to_eun_quat(simulation.aircraft.body.orientation)
             self.quaternion_setter(Quat(*orientation_enu))
 
             # Update wingtip trails
             g_force_vec = calculate_g_force(
-                aircraft,
+                simulation.aircraft,
+                simulation.wind_velocity,
                 self.simulation_config.aircraft,
                 self.simulation_config.physics,
             )
@@ -673,7 +675,7 @@ class Coordinator(Entity):
             is_visited = bool(self.route.visited[entity_idx])
             waypoint.update_entity(is_current, is_next, is_visited)
 
-        self.aircraft_entity.update_entity(self.simulation.aircraft)
+        self.aircraft_entity.update_entity(self.simulation)
 
         self.text_ui.update_ui(self.simulation, self.heightmap)
 
