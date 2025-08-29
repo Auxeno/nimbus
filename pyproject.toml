@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_backend"
+
+[project]
+name = "nimbus"
+version = "0.1.0"
+description = "JAX-based flight simulation framework implementing 6DOF aircraft dynamics with terrain collision detection"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "auxeno"},
+]
+maintainers = [
+    {name = "auxeno"},
+]
+keywords = ["flight-simulation", "jax", "6dof", "aircraft-dynamics", "physics-simulation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Simulation",
+]
+
+dependencies = [
+    "jax[cuda12]>=0.5.0",
+    "jaxlib",
+    "jaxtyping>=0.2.0",
+    "numpy>=1.21.0",
+]
+
+[project.optional-dependencies]
+viz = [
+    "ursina>=8.0.0",
+    "pillow>=9.0.0",
+    "matplotlib>=3.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/auxeno/nimbus"
+Repository = "https://github.com/auxeno/nimbus"
+Issues = "https://github.com/auxeno/nimbus/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nimbus*"]
+exclude = ["tests*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "I",  # isort
+    "N",  # pep8-naming
+    "UP", # pyupgrade
+    "B",  # flake8-bugbear
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501", # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

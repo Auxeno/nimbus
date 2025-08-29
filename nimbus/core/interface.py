@@ -4,7 +4,6 @@ from dataclasses import replace
 
 import jax
 import jax.numpy as jnp
-from chex import PRNGKey
 
 from . import logic, physics, quaternion, spatial
 from .config import AircraftConfig, MapConfig, PhysicsConfig, RouteConfig, WindConfig
@@ -14,6 +13,7 @@ from .primitives import (
     BoolScalar,
     FloatScalar,
     Matrix,
+    PRNGKey,
     Vector3,
     norm_3,
 )
@@ -64,9 +64,7 @@ def calculate_translational_acceleration(
         coef_lift=jnp.array(aircraft_config.coef_lift, dtype=FLOAT_DTYPE),
         coef_sideslip=jnp.array(aircraft_config.coef_sideslip, dtype=FLOAT_DTYPE),
         max_attack_angle=jnp.array(aircraft_config.max_attack_angle, dtype=FLOAT_DTYPE),
-        max_sideslip_angle=jnp.array(
-            aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE
-        ),
+        max_sideslip_angle=jnp.array(aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE),
         surface_areas=jnp.array(aircraft_config.surface_areas, dtype=FLOAT_DTYPE),
     )
 
@@ -281,9 +279,7 @@ def calculate_g_force(
         coef_lift=jnp.array(aircraft_config.coef_lift, dtype=FLOAT_DTYPE),
         coef_sideslip=jnp.array(aircraft_config.coef_sideslip, dtype=FLOAT_DTYPE),
         max_attack_angle=jnp.array(aircraft_config.max_attack_angle, dtype=FLOAT_DTYPE),
-        max_sideslip_angle=jnp.array(
-            aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE
-        ),
+        max_sideslip_angle=jnp.array(aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE),
         surface_areas=jnp.array(aircraft_config.surface_areas, dtype=FLOAT_DTYPE),
     )
 

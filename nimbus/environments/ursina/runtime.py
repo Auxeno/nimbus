@@ -17,6 +17,9 @@ from .entities import (
 )
 from .utils import generate_gradient_image, hex_to_rgba
 
+default_simulation_config = SimulationConfig()
+default_ursina_config = UrsinaConfig()
+
 
 class UrsinaRuntime:
     def __init__(
@@ -24,8 +27,8 @@ class UrsinaRuntime:
         simulation: Simulation,
         heightmap: Matrix,
         route: Route,
-        simulation_config: SimulationConfig = SimulationConfig(),
-        ursina_config: UrsinaConfig = UrsinaConfig(),
+        simulation_config: SimulationConfig = default_simulation_config,
+        ursina_config: UrsinaConfig = default_ursina_config,
     ) -> None:
         self.simulation = simulation
         self.heightmap = heightmap

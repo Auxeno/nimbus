@@ -3,8 +3,7 @@ Primitives module for shared vector aliases, numerical constants, and basic func
 """
 
 import jax.numpy as jnp
-from jaxtyping import Array, Bool, Float, Int, Scalar
-
+from jaxtyping import Array, Bool, Float, Int, PRNGKeyArray, Scalar
 
 # Project precision settings
 FLOAT_DTYPE = jnp.float32
@@ -22,6 +21,7 @@ Vector3 = Float[Array, "3"]
 Quaternion = Float[Array, "4"]
 Matrix = Float[Array, "N M"]
 Array = Array
+PRNGKey = PRNGKeyArray
 
 
 def norm_2(v: Vector2) -> FloatScalar:

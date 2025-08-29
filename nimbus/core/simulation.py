@@ -4,7 +4,6 @@ from dataclasses import replace
 
 import jax
 import jax.numpy as jnp
-from chex import PRNGKey
 
 from . import quaternion
 from .config import AircraftConfig, PhysicsConfig, SimulationConfig
@@ -16,7 +15,7 @@ from .interface import (
     update_wind,
     waypoint_hit,
 )
-from .primitives import FLOAT_DTYPE, FloatScalar, Matrix
+from .primitives import FLOAT_DTYPE, FloatScalar, Matrix, PRNGKey
 from .state import Aircraft, Body, Controls, Meta, Route, Simulation, Wind
 
 
@@ -69,9 +68,7 @@ def step_aircraft_euler(
         Aircraft state after one time step.
     """
     # Derivatives at the current state
-    dx, dv, dq, dw = aircraft_state_derivatives(
-        aircraft, wind, aircraft_config, physics_config
-    )
+    dx, dv, dq, dw = aircraft_state_derivatives(aircraft, wind, aircraft_config, physics_config)
 
     return replace(
         aircraft,
@@ -224,9 +221,7 @@ def step(
         heightmap=heightmap,
         map_config=config.map,
     )
-    active = jnp.logical_and(
-        simulation.aircraft.meta.active, jnp.logical_not(colliding)
-    )
+    active = jnp.logical_and(simulation.aircraft.meta.active, jnp.logical_not(colliding))
     aircraft = replace(
         simulation.aircraft,
         meta=Meta(
@@ -252,9 +247,7 @@ def step(
         physics_config=config.physics,
         dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
     )
-    aircraft = replace(
-        aircraft, controls=adjusted_controls, g_limiter_pid=new_pid_state
-    )
+    aircraft = replace(aircraft, controls=adjusted_controls, g_limiter_pid=new_pid_state)
 
     # Aircraft dynamics update
     aircraft = jax.lax.cond(

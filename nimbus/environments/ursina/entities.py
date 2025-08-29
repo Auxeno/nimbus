@@ -122,29 +122,17 @@ class InputHandler(Entity):
         self.controls = Controls.default()
 
         if held_keys["q"]:
-            self.controls = replace(
-                self.controls, aileron=jnp.array(-1.0, dtype=FLOAT_DTYPE)
-            )
+            self.controls = replace(self.controls, aileron=jnp.array(-1.0, dtype=FLOAT_DTYPE))
         if held_keys["e"]:
-            self.controls = replace(
-                self.controls, aileron=jnp.array(1.0, dtype=FLOAT_DTYPE)
-            )
+            self.controls = replace(self.controls, aileron=jnp.array(1.0, dtype=FLOAT_DTYPE))
         if held_keys["w"]:
-            self.controls = replace(
-                self.controls, elevator=jnp.array(-1.0, dtype=FLOAT_DTYPE)
-            )
+            self.controls = replace(self.controls, elevator=jnp.array(-1.0, dtype=FLOAT_DTYPE))
         if held_keys["s"]:
-            self.controls = replace(
-                self.controls, elevator=jnp.array(1.0, dtype=FLOAT_DTYPE)
-            )
+            self.controls = replace(self.controls, elevator=jnp.array(1.0, dtype=FLOAT_DTYPE))
         if held_keys["a"]:
-            self.controls = replace(
-                self.controls, rudder=jnp.array(-1.0, dtype=FLOAT_DTYPE)
-            )
+            self.controls = replace(self.controls, rudder=jnp.array(-1.0, dtype=FLOAT_DTYPE))
         if held_keys["d"]:
-            self.controls = replace(
-                self.controls, rudder=jnp.array(1.0, dtype=FLOAT_DTYPE)
-            )
+            self.controls = replace(self.controls, rudder=jnp.array(1.0, dtype=FLOAT_DTYPE))
 
     def input(self, key: str) -> None:
         if key == "p":
@@ -319,7 +307,7 @@ class Ribbon(Mesh):
     def __init__(
         self,
         width: float = 1.0,
-        color: Color = Color(1.0, 1.0, 1.0, 1.0),
+        color: Color = white,
         **kwargs,
     ) -> None:
         super().__init__(mode="triangle", **kwargs)
@@ -365,9 +353,7 @@ class Ribbon(Mesh):
             if roll:
                 c = cos(roll)
                 s = sin(roll)
-                normal = Vec3(
-                    normal.x * c - normal.z * s, 0, normal.x * s + normal.z * c
-                )
+                normal = Vec3(normal.x * c - normal.z * s, 0, normal.x * s + normal.z * c)
 
             normal *= half_width
             left_points.append(pos + normal)
@@ -544,9 +530,7 @@ class TerrainSurface:
 
         # Terrain entity with heightmap mesh
         terrain_color = (
-            hex_to_rgba(ursina_config.terrain_color)
-            if not use_contour_texture
-            else white
+            hex_to_rgba(ursina_config.terrain_color) if not use_contour_texture else white
         )
         Entity(
             model=Terrain(height_values=height_values, skip=0),
@@ -559,18 +543,14 @@ class TerrainSurface:
         # terrain.model.generate_normals()  # type: ignore
 
         # Add flat planes that surround central terrain (3x3 grid)
-        blank_texture = generate_blank_texture(
-            resolution=1, color=ursina_config.terrain_color
-        )
+        blank_texture = generate_blank_texture(resolution=1, color=ursina_config.terrain_color)
         for dx in [-1, 0, 1]:
             for dz in [-1, 0, 1]:
                 if dx == 0 and dz == 0:
                     continue  # skip the center tile (terrain)
                 Entity(
                     model="plane",
-                    scale=Vec3(
-                        simulation_config.map.size, 1.0, simulation_config.map.size
-                    ),
+                    scale=Vec3(simulation_config.map.size, 1.0, simulation_config.map.size),
                     position=Vec3(
                         dx * simulation_config.map.size,
                         0.0,
@@ -596,9 +576,7 @@ class AircraftEntity(Entity):
                 model=ursina_config.aircraft_model_path,
                 scale=convert_scale(model_scale),
                 texture=Texture(
-                    generate_blank_texture(
-                        resolution=1, color=ursina_config.aircraft_color
-                    )
+                    generate_blank_texture(resolution=1, color=ursina_config.aircraft_color)
                 ),  # type: ignore
                 color=color,
             )

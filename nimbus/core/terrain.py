@@ -7,7 +7,6 @@ values correspond to increased terrain elevation in world coordinates.
 
 import jax
 import jax.numpy as jnp
-from chex import PRNGKey
 
 from .primitives import (
     EPS,
@@ -16,6 +15,7 @@ from .primitives import (
     FloatScalar,
     IntScalar,
     Matrix,
+    PRNGKey,
     Vector,
 )
 

@@ -110,12 +110,7 @@ def interpolate_bilinear(
     h11 = heightmap[u1, v1]
 
     # Bilinear blend
-    return (
-        h00 * (1 - tu) * (1 - tv)
-        + h10 * tu * (1 - tv)
-        + h01 * (1 - tu) * tv
-        + h11 * tu * tv
-    )
+    return h00 * (1 - tu) * (1 - tv) + h10 * tu * (1 - tv) + h01 * (1 - tu) * tv + h11 * tu * tv
 
 
 def calculate_height_diff(
@@ -123,7 +118,7 @@ def calculate_height_diff(
     position: Vector3,
     map_size: FloatScalar,
     terrain_height: FloatScalar,
-    use_bilinear: BoolScalar = jnp.array(True, dtype=bool),
+    use_bilinear: BoolScalar,
 ) -> FloatScalar:
     """
     Compute vertical difference between entity and terrain elevation.
@@ -182,7 +177,7 @@ def calculate_terrain_collision(
     position: Vector3,
     map_size: FloatScalar,
     terrain_height: FloatScalar,
-    use_bilinear: BoolScalar = jnp.array(True, dtype=bool),
+    use_bilinear: BoolScalar,
 ) -> BoolScalar:
     """
     Check if a position is colliding with (underneath) terrain surface.

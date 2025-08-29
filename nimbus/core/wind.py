@@ -6,9 +6,8 @@ All quantities use SI units and NED world-frame unless noted.
 
 import jax
 import jax.numpy as jnp
-from chex import PRNGKey
 
-from .primitives import FLOAT_DTYPE, FloatScalar, Vector3
+from .primitives import FLOAT_DTYPE, FloatScalar, PRNGKey, Vector3
 
 
 def step_ornstein_uhlenbeck(

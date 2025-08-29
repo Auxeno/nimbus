@@ -129,9 +129,7 @@ def hex_to_rgba(hex_color: str) -> Color:
         b = int(s[4:6], 16) / 255.0
         a = int(s[6:8], 16) / 255.0
     else:
-        raise ValueError(
-            f"Invalid hex color: {hex_color!r}. Expected 6 or 8 characters."
-        )
+        raise ValueError(f"Invalid hex color: {hex_color!r}. Expected 6 or 8 characters.")
 
     return rgba(r, g, b, a)
 
@@ -238,9 +236,7 @@ def generate_terrain_contour_image(
 
     img_array = np.zeros((resolution, resolution, 3), dtype=np.uint8)
     for i in range(3):
-        img_array[:, :, i] = np.clip(terrain_rgb[i] * brightness, 0, 255).astype(
-            np.uint8
-        )
+        img_array[:, :, i] = np.clip(terrain_rgb[i] * brightness, 0, 255).astype(np.uint8)
 
     # Create PIL image
     img = Image.fromarray(img_array, mode="RGB")
@@ -251,9 +247,7 @@ def generate_terrain_contour_image(
     max_elevation = np.max(elevation_map)
     min_contour = np.ceil(min_elevation / contour_interval) * contour_interval
     max_contour = np.floor(max_elevation / contour_interval) * contour_interval
-    contour_levels = np.arange(
-        min_contour, max_contour + contour_interval, contour_interval
-    )
+    contour_levels = np.arange(min_contour, max_contour + contour_interval, contour_interval)
 
     # Generate contours using skimage's marching squares
     for level in contour_levels:
@@ -300,18 +294,14 @@ def compute_flight_metrics(
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
     map_config: MapConfig,
-) -> tuple[
-    FloatScalar, FloatScalar, FloatScalar, FloatScalar, FloatScalar, FloatScalar
-]:
+) -> tuple[FloatScalar, FloatScalar, FloatScalar, FloatScalar, FloatScalar, FloatScalar]:
     # Mach number
     vel = aircraft.body.velocity
     speed = norm_3(vel)
 
     # Angle of attack
     alpha = jnp.rad2deg(
-        physics.calculate_angle_of_attack(
-            aircraft.body.velocity, aircraft.body.orientation
-        )
+        physics.calculate_angle_of_attack(aircraft.body.velocity, aircraft.body.orientation)
     )
 
     # G-force
@@ -327,6 +317,7 @@ def compute_flight_metrics(
         aircraft.body.position,
         jnp.array(map_config.size, dtype=FLOAT_DTYPE),
         jnp.array(map_config.terrain_height, dtype=FLOAT_DTYPE),
+        use_bilinear=jnp.array(True, dtype=bool),
     )
 
     # VS (vertical speed) - negative of down component since positive means climbing

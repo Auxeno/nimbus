@@ -9,9 +9,9 @@ from nimbus.core.config import (
     AircraftConfig,
     MapConfig,
     PhysicsConfig,
+    PIDControllerConfig,
     RouteConfig,
     TerrainConfig,
-    PIDControllerConfig,
 )
 from nimbus.core.interface import (
     aircraft_state_derivatives,
@@ -69,9 +69,7 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
         mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
         gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
     )
-    result_1 = calculate_translational_acceleration(
-        aircraft, wind, aircraft_config, physics_config
-    )
+    result_1 = calculate_translational_acceleration(aircraft, wind, aircraft_config, physics_config)
 
     # Check shape
     assert result_1.shape == (3,)
@@ -144,14 +142,10 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         )
     )(jnp.arange(3))
-    aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pid_batch
-    )
+    aircraft_batch = jax.vmap(Aircraft)(metas, bodies, controls_batch, g_limiter_pid_batch)
 
     accel_vmap = jax.vmap(
-        lambda a: calculate_translational_acceleration(
-            a, wind, aircraft_config, physics_config
-        )
+        lambda a: calculate_translational_acceleration(a, wind, aircraft_config, physics_config)
     )
     vmap_results = accel_vmap(aircraft_batch)
 
@@ -199,9 +193,7 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
 
-    result_1 = calculate_angular_acceleration(
-        aircraft, wind, aircraft_config, physics_config
-    )
+    result_1 = calculate_angular_acceleration(aircraft, wind, aircraft_config, physics_config)
 
     # Check shape
     assert result_1.shape == (3,)
@@ -272,14 +264,10 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         )
     )(jnp.arange(3))
-    aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pid_batch
-    )
+    aircraft_batch = jax.vmap(Aircraft)(metas, bodies, controls_batch, g_limiter_pid_batch)
 
     ang_accel_vmap = jax.vmap(
-        lambda a: calculate_angular_acceleration(
-            a, wind, aircraft_config, physics_config
-        )
+        lambda a: calculate_angular_acceleration(a, wind, aircraft_config, physics_config)
     )
     vmap_results = ang_accel_vmap(aircraft_batch)
 
@@ -326,9 +314,7 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
         mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
         gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
     )
-    dx, dv, dq, dw = aircraft_state_derivatives(
-        aircraft, wind, aircraft_config, physics_config
-    )
+    dx, dv, dq, dw = aircraft_state_derivatives(aircraft, wind, aircraft_config, physics_config)
 
     # Check shapes
     assert dx.shape == (3,)  # Position derivative (velocity)
@@ -362,9 +348,9 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
         dtype=FLOAT_DTYPE,
     )
     zero_angle = jnp.array(0.0, dtype=FLOAT_DTYPE)
-    orientations = jax.vmap(
-        lambda _: from_euler_zyx(zero_angle, zero_angle, zero_angle)
-    )(jnp.arange(3))
+    orientations = jax.vmap(lambda _: from_euler_zyx(zero_angle, zero_angle, zero_angle))(
+        jnp.arange(3)
+    )
     angular_velocities = jnp.zeros((3, 3), dtype=FLOAT_DTYPE)
     bodies = jax.vmap(Body)(positions, velocities, orientations, angular_velocities)
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(3))
@@ -375,9 +361,7 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         )
     )(jnp.arange(3))
-    aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pid_batch
-    )
+    aircraft_batch = jax.vmap(Aircraft)(metas, bodies, controls_batch, g_limiter_pid_batch)
 
     derivatives_vmap = jax.vmap(
         lambda a: aircraft_state_derivatives(a, wind, aircraft_config, physics_config)
@@ -491,9 +475,9 @@ def test_terrain_collision(jit_mode: str) -> None:
     )
     velocities = jnp.tile(jnp.array([50.0, 0.0, 0.0], dtype=FLOAT_DTYPE), (4, 1))
     zero_angle = jnp.array(0.0, dtype=FLOAT_DTYPE)
-    orientations = jax.vmap(
-        lambda _: from_euler_zyx(zero_angle, zero_angle, zero_angle)
-    )(jnp.arange(4))
+    orientations = jax.vmap(lambda _: from_euler_zyx(zero_angle, zero_angle, zero_angle))(
+        jnp.arange(4)
+    )
     angular_velocities = jnp.zeros((4, 3), dtype=FLOAT_DTYPE)
     bodies = jax.vmap(Body)(positions, velocities, orientations, angular_velocities)
     metas = jax.vmap(lambda i: Meta(jnp.array(True, dtype=bool), i))(jnp.arange(4))
@@ -504,9 +488,7 @@ def test_terrain_collision(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         )
     )(jnp.arange(4))
-    aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pid_batch
-    )
+    aircraft_batch = jax.vmap(Aircraft)(metas, bodies, controls_batch, g_limiter_pid_batch)
 
     collision_vmap = jax.vmap(lambda a: terrain_collision(a, heightmap, map_config))
     vmap_results = collision_vmap(aircraft_batch)
@@ -602,13 +584,9 @@ def test_calculate_g_force(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         )
     )(jnp.arange(3))
-    aircraft_batch = jax.vmap(Aircraft)(
-        metas, bodies, controls_batch, g_limiter_pid_batch
-    )
+    aircraft_batch = jax.vmap(Aircraft)(metas, bodies, controls_batch, g_limiter_pid_batch)
 
-    g_force_vmap = jax.vmap(
-        lambda a: calculate_g_force(a, wind, aircraft_config, physics_config)
-    )
+    g_force_vmap = jax.vmap(lambda a: calculate_g_force(a, wind, aircraft_config, physics_config))
     vmap_results = g_force_vmap(aircraft_batch)
 
     assert vmap_results.shape == (3, 3)
@@ -679,9 +657,7 @@ def test_waypoint_hit(jit_mode: str) -> None:
 
     # Standard case 4 - near but outside radius
     body_near = Body(
-        position=jnp.array(
-            [1500.0 + route_config.radius + 10.0, 0.0, -500.0], dtype=FLOAT_DTYPE
-        ),
+        position=jnp.array([1500.0 + route_config.radius + 10.0, 0.0, -500.0], dtype=FLOAT_DTYPE),
         velocity=jnp.array([50.0, 0.0, 0.0], dtype=FLOAT_DTYPE),
         orientation=body.orientation,
         angular_velocity=jnp.array([0.0, 0.0, 0.0], dtype=FLOAT_DTYPE),
@@ -719,7 +695,7 @@ def test_next_waypoint(jit_mode: str) -> None:
 
     # Standard case 2 - advance through all waypoints
     current_route = route
-    for i in range(route.positions.shape[0]):
+    for _ in range(route.positions.shape[0]):
         current_route = next_waypoint(current_route, loop)
 
     # All waypoints should be visited
@@ -908,9 +884,7 @@ def test_apply_g_limiter_positive_g_violation(jit_mode: str) -> None:
             jnp.array(0.35, dtype=FLOAT_DTYPE),  # Even higher pitch angle (~20 degrees)
             jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
-        angular_velocity=jnp.array(
-            [0.0, 2.0, 0.0], dtype=FLOAT_DTYPE
-        ),  # High pitch rate
+        angular_velocity=jnp.array([0.0, 2.0, 0.0], dtype=FLOAT_DTYPE),  # High pitch rate
     )
     aircraft_extreme = Aircraft(
         meta=meta,
@@ -945,9 +919,7 @@ def test_apply_g_limiter_negative_g_violation(jit_mode: str) -> None:
             jnp.array(-0.3, dtype=FLOAT_DTYPE),  # Pitched down significantly
             jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
-        angular_velocity=jnp.array(
-            [0.0, -1.5, 0.0], dtype=FLOAT_DTYPE
-        ),  # Pitching down
+        angular_velocity=jnp.array([0.0, -1.5, 0.0], dtype=FLOAT_DTYPE),  # Pitching down
     )
     controls = Controls(
         throttle=jnp.array(0.2, dtype=FLOAT_DTYPE),  # Low thrust
@@ -1005,9 +977,7 @@ def test_apply_g_limiter_pd_controller(jit_mode: str) -> None:
             jnp.array(0.3, dtype=FLOAT_DTYPE),  # Significant pitch angle
             jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
-        angular_velocity=jnp.array(
-            [0.0, 2.0, 0.0], dtype=FLOAT_DTYPE
-        ),  # High pitch rate
+        angular_velocity=jnp.array([0.0, 2.0, 0.0], dtype=FLOAT_DTYPE),  # High pitch rate
     )
     controls = Controls(
         throttle=jnp.array(0.9, dtype=FLOAT_DTYPE),
@@ -1415,7 +1385,7 @@ def test_apply_g_limiter_multi_step(jit_mode: str) -> None:
 
     # Simulate 5 time steps
     current_aircraft = aircraft
-    for i in range(5):
+    for _ in range(5):
         adjusted_controls, new_pd_state = apply_g_limiter(
             current_aircraft,
             controls,
@@ -1451,9 +1421,7 @@ def test_apply_g_limiter_vmap(jit_mode: str) -> None:
     )(jnp.arange(batch_size, dtype=INT_DTYPE))
 
     # Create different bodies with varying angular velocities
-    angular_vels = jnp.array(
-        [[0.0, 1.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.5, 0.0]], dtype=FLOAT_DTYPE
-    )
+    angular_vels = jnp.array([[0.0, 1.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.5, 0.0]], dtype=FLOAT_DTYPE)
     bodies = jax.vmap(
         lambda ang_vel: Body(
             position=jnp.array([0.0, 0.0, -1000.0], dtype=FLOAT_DTYPE),
@@ -1498,9 +1466,7 @@ def test_apply_g_limiter_vmap(jit_mode: str) -> None:
     )
 
     # Apply vmap
-    vmapped_g_limiter = jax.vmap(
-        apply_g_limiter, in_axes=(0, 0, None, None, None, None)
-    )
+    vmapped_g_limiter = jax.vmap(apply_g_limiter, in_axes=(0, 0, None, None, None, None))
 
     batched_adjusted_controls, batched_pd_states = vmapped_g_limiter(
         aircraft_batch,
@@ -1536,9 +1502,7 @@ def test_apply_g_limiter_extreme_values(jit_mode: str) -> None:
             jnp.array(0.2, dtype=FLOAT_DTYPE),  # Pitched up
             jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
-        angular_velocity=jnp.array(
-            [0.0, 10.0, 0.0], dtype=FLOAT_DTYPE
-        ),  # Very high pitch rate
+        angular_velocity=jnp.array([0.0, 10.0, 0.0], dtype=FLOAT_DTYPE),  # Very high pitch rate
     )
     controls = Controls(
         throttle=jnp.array(1.0, dtype=FLOAT_DTYPE),  # Max throttle
