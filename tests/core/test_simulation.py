@@ -24,7 +24,7 @@ from nimbus.core.state import (
     Body,
     Controls,
     Meta,
-    PDControllerState,
+    PIDControllerState,
     Simulation,
 )
 from nimbus.core.terrain import generate_heightmap
@@ -59,7 +59,7 @@ def test_set_controls(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=old_controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -147,7 +147,7 @@ def test_freeze_aircraft(jit_mode: str) -> None:
         meta=meta,
         body=body_moving,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -179,7 +179,7 @@ def test_freeze_aircraft(jit_mode: str) -> None:
         meta=meta,
         body=body_stationary,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -198,7 +198,7 @@ def test_freeze_aircraft(jit_mode: str) -> None:
         meta=meta,
         body=body_fast,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -286,7 +286,7 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -297,7 +297,7 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
     result_1 = step_aircraft_rk4(aircraft, aircraft_config, physics_config, dt)
     # Aircraft should have moved forward
     assert result_1.body.position[0] > aircraft.body.position[0]
-    # Orientation should be normalized
+    # Orientation should be normalised
     orientation_norm = jnp.linalg.norm(result_1.body.orientation)
     assert jnp.isclose(orientation_norm, 1.0, atol=1e-5)
     # Aircraft should still be active
@@ -314,7 +314,7 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls_active,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -337,7 +337,7 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
         meta=meta,
         body=body_hover,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -440,7 +440,7 @@ def test_step(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -470,7 +470,7 @@ def test_step(jit_mode: str) -> None:
         meta=meta,
         body=body_low,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -481,7 +481,7 @@ def test_step(jit_mode: str) -> None:
     result_2, route_2 = step(simulation_low, heightmap, route, config)
     assert result_2.aircraft.meta.active == jnp.array(True, dtype=bool)
     # Should still be active if above terrain
-    # With terrain at 0.9 (normalized), actual height is negative (mountain)
+    # With terrain at 0.9 (normalised), actual height is negative (mountain)
     # so aircraft at 50m down might collide depending on terrain height config
 
     # Standard case 3 - multiple steps
@@ -510,7 +510,7 @@ def test_step(jit_mode: str) -> None:
         meta=meta,
         body=body_underground,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -540,7 +540,7 @@ def test_step(jit_mode: str) -> None:
         meta=meta_inactive,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -623,7 +623,7 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -634,7 +634,7 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
     result_1 = step_aircraft_euler(aircraft, aircraft_config, physics_config, dt)
     # Aircraft should have moved forward
     assert result_1.body.position[0] > aircraft.body.position[0]
-    # Orientation should be normalized
+    # Orientation should be normalised
     orientation_norm = jnp.linalg.norm(result_1.body.orientation)
     assert jnp.isclose(orientation_norm, 1.0, atol=1e-5)
     # Aircraft should still be active
@@ -651,7 +651,7 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls_active,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )
@@ -679,7 +679,7 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
         meta=meta,
         body=body_hover,
         controls=controls,
-        g_limiter_pd=PDControllerState(
+        g_limiter_pd=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
         ),
     )

@@ -135,7 +135,7 @@ def test_generate_terrain_map(jit_mode: str) -> None:
 
     # Check shape matches resolution
     assert result_1.shape == (default_config.resolution, default_config.resolution)
-    # Values should be normalized between 0 and 1
+    # Values should be normalised between 0 and 1
     assert jnp.all(result_1 >= 0.0)
     assert jnp.all(result_1 <= 1.0)
     # Should have some variation (not all the same value)
@@ -203,7 +203,7 @@ def test_generate_terrain_map(jit_mode: str) -> None:
         default_config.resolution,
         default_config.resolution,
     )
-    # All should be properly normalized
+    # All should be properly normalised
     assert jnp.all(vmap_results >= 0.0)
     assert jnp.all(vmap_results <= 1.0)
     # Each should be different

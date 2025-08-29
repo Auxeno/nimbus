@@ -9,7 +9,16 @@ from chex import PRNGKey
 from . import quaternion
 from .config import TerrainConfig
 from .primitives import FLOAT_DTYPE, INT_DTYPE, FloatScalar, Matrix
-from .state import Aircraft, Body, Controls, Meta, PIDControllerState, Route, Simulation, Wind
+from .state import (
+    Aircraft,
+    Body,
+    Controls,
+    Meta,
+    PIDControllerState,
+    Route,
+    Simulation,
+    Wind,
+)
 from .terrain import generate_heightmap
 
 
@@ -164,7 +173,7 @@ def generate_simulation(
         ),
     )
 
-    # Initialize wind with mean and zero gusts
+    # Initialise wind with mean and zero gusts
     wind = Wind(
         mean=mean_wind,
         gust=jnp.zeros(3, dtype=FLOAT_DTYPE),

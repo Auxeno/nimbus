@@ -168,7 +168,7 @@ class RouteConfig:
 class WindConfig:
     """Configuration for wind gust generation."""
 
-    gust_intensity: float = 5.0
+    gust_intensity: float = 50.0
     """RMS intensity of wind gusts [m/s]."""
 
     gust_duration: float = 5.0
@@ -192,11 +192,11 @@ class SimulationConfig:
     map: MapConfig = MapConfig()
     """Config for simulation map."""
 
-    route: RouteConfig = RouteConfig()
-    """Config for waypoint route."""
-
     wind: WindConfig = WindConfig()
     """Config for wind gust generation."""
+
+    route: RouteConfig = RouteConfig()
+    """Config for waypoint route."""
 
     dt: float = 1 / 60
     """Fixed time step delta [s]."""
