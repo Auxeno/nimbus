@@ -190,10 +190,16 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
 
-    result_1 = calculate_angular_acceleration(aircraft, aircraft_config, physics_config)
+    result_1 = calculate_angular_acceleration(
+        aircraft, wind, aircraft_config, physics_config
+    )
 
     # Check shape
     assert result_1.shape == (3,)
@@ -217,7 +223,7 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
         ),
     )
     result_2 = calculate_angular_acceleration(
-        aircraft_neutral, aircraft_config, physics_config
+        aircraft_neutral, wind, aircraft_config, physics_config
     )
 
     # Should have minimal angular acceleration
@@ -269,7 +275,9 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
     )
 
     ang_accel_vmap = jax.vmap(
-        lambda a: calculate_angular_acceleration(a, wind, aircraft_config, physics_config)
+        lambda a: calculate_angular_acceleration(
+            a, wind, aircraft_config, physics_config
+        )
     )
     vmap_results = ang_accel_vmap(aircraft_batch)
 
