@@ -24,7 +24,7 @@ from nimbus.core.interface import (
 from nimbus.core.primitives import EPS, FLOAT_DTYPE, INT_DTYPE
 from nimbus.core.quaternion import from_euler_zyx
 from nimbus.core.scenario import InitialConditions, generate_route
-from nimbus.core.state import Aircraft, Body, Controls, Meta, PIDControllerState
+from nimbus.core.state import Aircraft, Body, Controls, Meta, PIDControllerState, Wind
 from nimbus.core.terrain import generate_heightmap
 
 
@@ -63,9 +63,12 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
 
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
     result_1 = calculate_translational_acceleration(
-        aircraft, wind_velocity, aircraft_config, physics_config
+        aircraft, wind, aircraft_config, physics_config
     )
 
     # Check shape
@@ -92,7 +95,7 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
         ),
     )
     result_2 = calculate_translational_acceleration(
-        aircraft_hover, wind_velocity, aircraft_config, physics_config
+        aircraft_hover, wind, aircraft_config, physics_config
     )
 
     # Should have acceleration mainly from gravity
@@ -115,7 +118,7 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
         ),
     )
     result_3 = calculate_translational_acceleration(
-        aircraft_high, wind_velocity, aircraft_config, physics_config
+        aircraft_high, wind, aircraft_config, physics_config
     )
 
     # At high altitude, air density is lower, so drag and lift are reduced
@@ -145,7 +148,7 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
 
     accel_vmap = jax.vmap(
         lambda a: calculate_translational_acceleration(
-            a, wind_velocity, aircraft_config, physics_config
+            a, wind, aircraft_config, physics_config
         )
     )
     vmap_results = accel_vmap(aircraft_batch)
@@ -237,7 +240,7 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
         ),
     )
     result_3 = calculate_angular_acceleration(
-        aircraft_rotating, aircraft_config, physics_config
+        aircraft_rotating, wind, aircraft_config, physics_config
     )
 
     # Should have damping moments opposing rotation
@@ -266,7 +269,7 @@ def test_calculate_angular_acceleration(jit_mode: str) -> None:
     )
 
     ang_accel_vmap = jax.vmap(
-        lambda a: calculate_angular_acceleration(a, aircraft_config, physics_config)
+        lambda a: calculate_angular_acceleration(a, wind, aircraft_config, physics_config)
     )
     vmap_results = ang_accel_vmap(aircraft_batch)
 
@@ -309,9 +312,12 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
 
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
     dx, dv, dq, dw = aircraft_state_derivatives(
-        aircraft, wind_velocity, aircraft_config, physics_config
+        aircraft, wind, aircraft_config, physics_config
     )
 
     # Check shapes
@@ -364,7 +370,7 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
     )
 
     derivatives_vmap = jax.vmap(
-        lambda a: aircraft_state_derivatives(a, wind_velocity, aircraft_config, physics_config)
+        lambda a: aircraft_state_derivatives(a, wind, aircraft_config, physics_config)
     )
     dx_batch, dv_batch, dq_batch, dw_batch = derivatives_vmap(aircraft_batch)
 
@@ -536,8 +542,11 @@ def test_calculate_g_force(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
 
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
-    result_1 = calculate_g_force(aircraft, wind_velocity, aircraft_config, physics_config)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
+    result_1 = calculate_g_force(aircraft, wind, aircraft_config, physics_config)
 
     # Check shape
     assert result_1.shape == (3,)
@@ -560,7 +569,7 @@ def test_calculate_g_force(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
-    result_2 = calculate_g_force(aircraft_high_g, wind_velocity, aircraft_config, physics_config)
+    result_2 = calculate_g_force(aircraft_high_g, wind, aircraft_config, physics_config)
 
     # Should experience higher G-force with control inputs
     assert jnp.linalg.norm(result_2) != jnp.linalg.norm(result_1)
@@ -588,7 +597,7 @@ def test_calculate_g_force(jit_mode: str) -> None:
     )
 
     g_force_vmap = jax.vmap(
-        lambda a: calculate_g_force(a, wind_velocity, aircraft_config, physics_config)
+        lambda a: calculate_g_force(a, wind, aircraft_config, physics_config)
     )
     vmap_results = g_force_vmap(aircraft_batch)
 

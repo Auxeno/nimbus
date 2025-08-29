@@ -9,7 +9,7 @@ from nimbus.core.config import AircraftConfig, PIDControllerConfig, PhysicsConfi
 from nimbus.core.logic import apply_g_limiter
 from nimbus.core.primitives import EPS, FLOAT_DTYPE, INT_DTYPE
 from nimbus.core.quaternion import from_euler_zyx
-from nimbus.core.state import Aircraft, Body, Controls, Meta, PIDControllerState
+from nimbus.core.state import Aircraft, Body, Controls, Meta, PIDControllerState, Wind
 
 
 def test_apply_g_limiter_no_correction(jit_mode: str) -> None:
@@ -47,10 +47,13 @@ def test_apply_g_limiter_no_correction(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     adjusted_controls, new_pd_state = apply_g_limiter(
-        aircraft, controls, wind_velocity, aircraft_config, physics_config, dt
+        aircraft, controls, wind, aircraft_config, physics_config, dt
     )
 
     # Should not modify elevator when within limits
@@ -77,7 +80,7 @@ def test_apply_g_limiter_no_correction(jit_mode: str) -> None:
     adjusted_controls_2, new_pd_state_2 = apply_g_limiter(
         aircraft_moderate,
         controls_moderate,
-        wind_velocity,
+        wind,
         aircraft_config,
         physics_config,
         dt,
@@ -130,10 +133,13 @@ def test_apply_g_limiter_positive_g_violation(jit_mode: str) -> None:
     )
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     adjusted_controls, new_pd_state = apply_g_limiter(
-        aircraft, controls, wind_velocity, aircraft_config, physics_config, dt
+        aircraft, controls, wind, aircraft_config, physics_config, dt
     )
 
     # Should reduce elevator input when G-limit is violated (or no change if not violated)
@@ -167,7 +173,7 @@ def test_apply_g_limiter_positive_g_violation(jit_mode: str) -> None:
     )
 
     adjusted_controls_2, new_pd_state_2 = apply_g_limiter(
-        aircraft_extreme, controls, wind_velocity, aircraft_config, physics_config, dt
+        aircraft_extreme, controls, wind, aircraft_config, physics_config, dt
     )
 
     # Should apply stronger correction (more negative elevator = stronger correction)
@@ -217,10 +223,13 @@ def test_apply_g_limiter_negative_g_violation(jit_mode: str) -> None:
     )
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     adjusted_controls, new_pd_state = apply_g_limiter(
-        aircraft, controls, wind_velocity, aircraft_config, physics_config, dt
+        aircraft, controls, wind, aircraft_config, physics_config, dt
     )
 
     # Should increase elevator input (less negative) when negative G-limit violated
@@ -282,13 +291,16 @@ def test_apply_g_limiter_pd_controller(jit_mode: str) -> None:
     )
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     controls_low_kp, _ = apply_g_limiter(
-        aircraft, controls, wind_velocity, config_low_kp, physics_config, dt
+        aircraft, controls, wind, config_low_kp, physics_config, dt
     )
     controls_high_kp, _ = apply_g_limiter(
-        aircraft, controls, wind_velocity, config_high_kp, physics_config, dt
+        aircraft, controls, wind, config_high_kp, physics_config, dt
     )
 
     # Higher Kp should result in larger correction (more reduction in elevator) if violation occurs
@@ -313,7 +325,7 @@ def test_apply_g_limiter_pd_controller(jit_mode: str) -> None:
     )
 
     adjusted_controls, new_pd_state = apply_g_limiter(
-        aircraft_with_error, controls, wind_velocity, config_with_kd, physics_config, dt
+        aircraft_with_error, controls, wind, config_with_kd, physics_config, dt
     )
 
     # Should update previous error (may be zero if no G-limit violation)
@@ -356,7 +368,7 @@ def test_apply_g_limiter_pd_controller(jit_mode: str) -> None:
     controls_clamped, _ = apply_g_limiter(
         aircraft_extreme,
         aircraft_extreme.controls,
-        wind_velocity,
+        wind,
         config_low_max,
         physics_config,
         dt,
@@ -406,10 +418,13 @@ def test_apply_g_limiter_elevator_saturation(jit_mode: str) -> None:
     )
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     adjusted_controls, _ = apply_g_limiter(
-        aircraft_high, controls_high, wind_velocity, aircraft_config, physics_config, dt
+        aircraft_high, controls_high, wind, aircraft_config, physics_config, dt
     )
 
     # Elevator should be clamped to [-1, 1]
@@ -444,7 +459,7 @@ def test_apply_g_limiter_elevator_saturation(jit_mode: str) -> None:
     )
 
     adjusted_controls_2, _ = apply_g_limiter(
-        aircraft_low, controls_low, wind_velocity, aircraft_config, physics_config, dt
+        aircraft_low, controls_low, wind, aircraft_config, physics_config, dt
     )
 
     # Should remain within bounds
@@ -486,12 +501,15 @@ def test_apply_g_limiter_timestep_stability(jit_mode: str) -> None:
     )
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     # Very small timestep
     dt_small = jnp.array(1e-6, dtype=FLOAT_DTYPE)
     adjusted_controls_small, new_pd_state_small = apply_g_limiter(
-        aircraft, controls, wind_velocity, aircraft_config, physics_config, dt_small
+        aircraft, controls, wind, aircraft_config, physics_config, dt_small
     )
 
     # Should still produce valid results
@@ -501,7 +519,7 @@ def test_apply_g_limiter_timestep_stability(jit_mode: str) -> None:
     # Standard case 2 - large timestep
     dt_large = jnp.array(0.1, dtype=FLOAT_DTYPE)
     adjusted_controls_large, new_pd_state_large = apply_g_limiter(
-        aircraft, controls, wind_velocity, aircraft_config, physics_config, dt_large
+        aircraft, controls, wind, aircraft_config, physics_config, dt_large
     )
 
     # Should remain stable and bounded
@@ -511,7 +529,7 @@ def test_apply_g_limiter_timestep_stability(jit_mode: str) -> None:
     # Edge case - normal timestep for comparison
     dt_normal = jnp.array(0.01, dtype=FLOAT_DTYPE)
     adjusted_controls_normal, new_pd_state_normal = apply_g_limiter(
-        aircraft, controls, wind_velocity, aircraft_config, physics_config, dt_normal
+        aircraft, controls, wind, aircraft_config, physics_config, dt_normal
     )
 
     # All should be finite
@@ -570,13 +588,16 @@ def test_apply_g_limiter_aircraft_configurations(jit_mode: str) -> None:
     )
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     fighter_controls, _ = apply_g_limiter(
-        aircraft, controls, wind_velocity, fighter_config, physics_config, dt
+        aircraft, controls, wind, fighter_config, physics_config, dt
     )
     transport_controls, _ = apply_g_limiter(
-        aircraft, controls, wind_velocity, transport_config, physics_config, dt
+        aircraft, controls, wind, transport_config, physics_config, dt
     )
 
     # Transport should have more aggressive limiting
@@ -594,7 +615,7 @@ def test_apply_g_limiter_aircraft_configurations(jit_mode: str) -> None:
     )
 
     aerobatic_controls, _ = apply_g_limiter(
-        aircraft, controls, wind_velocity, aerobatic_config, physics_config, dt
+        aircraft, controls, wind, aerobatic_config, physics_config, dt
     )
 
     # Aerobatic should have least limiting
@@ -637,7 +658,10 @@ def test_apply_g_limiter_multi_step(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     # Simulate 5 time steps
     current_aircraft = aircraft
@@ -645,7 +669,7 @@ def test_apply_g_limiter_multi_step(jit_mode: str) -> None:
         adjusted_controls, new_pd_state = apply_g_limiter(
             current_aircraft,
             controls,
-            wind_velocity,
+            wind,
             aircraft_config,
             physics_config,
             dt,
@@ -718,7 +742,10 @@ def test_apply_g_limiter_vmap(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     # Apply vmap
     vmapped_g_limiter = jax.vmap(
@@ -728,7 +755,7 @@ def test_apply_g_limiter_vmap(jit_mode: str) -> None:
     batched_adjusted_controls, batched_pd_states = vmapped_g_limiter(
         aircraft_batch,
         controls_batch,
-        wind_velocity,
+        wind,
         aircraft_config,
         physics_config,
         dt,
@@ -786,10 +813,13 @@ def test_apply_g_limiter_extreme_values(jit_mode: str) -> None:
     )
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.array(0.0, dtype=FLOAT_DTYPE)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
 
     adjusted_controls, new_pd_state = apply_g_limiter(
-        aircraft, controls, wind_velocity, aircraft_config, physics_config, dt
+        aircraft, controls, wind, aircraft_config, physics_config, dt
     )
 
     # Should remain bounded and stable
@@ -819,7 +849,7 @@ def test_apply_g_limiter_extreme_values(jit_mode: str) -> None:
     )
 
     adjusted_controls_2, new_pd_state_2 = apply_g_limiter(
-        aircraft_slow, controls, wind_velocity, aircraft_config, physics_config, dt
+        aircraft_slow, controls, wind, aircraft_config, physics_config, dt
     )
 
     # Should handle low velocity gracefully

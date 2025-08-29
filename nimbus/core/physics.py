@@ -109,7 +109,7 @@ def calculate_angle_of_attack(
     Parameters
     ----------
     velocity: Vector3
-        Velocity in NED world-frame [m/s].
+        Relative velocity in NED world-frame [m/s].
     orientation: Quaternion
         Body to world orientation quaternion.
 
@@ -134,7 +134,7 @@ def calculate_angle_of_sideslip(
     Parameters
     ----------
     velocity: Vector3
-        Velocity in NED world-frame [m/s].
+        Relative velocity in NED world-frame [m/s].
     orientation: Quaternion
         Body to world orientation quaternion.
 
@@ -313,11 +313,11 @@ def calculate_drag(
     Parameters
     ----------
     velocity: Vector3
-        Velocity in NED world-frame [m/s].
+        Relative velocity in NED world-frame [m/s].
     orientation: Quaternion
         Body to world orientation quaternion.
     airspeed: FloatScalar
-        True airspeed [m/s].
+        True airspeed (magnitude of relative velocity) [m/s].
     dynamic_pressure: FloatScalar
         Aerodynamic pressure on body [N/m^2].
     coef_drag: FloatScalar
@@ -356,7 +356,6 @@ def calculate_drag(
 def calculate_aero_forces(
     velocity: Vector3,
     orientation: Quaternion,
-    wind_velocity: Vector3,
     air_density: FloatScalar,
     coef_drag: FloatScalar,
     coef_lift: FloatScalar,
@@ -371,11 +370,9 @@ def calculate_aero_forces(
     Parameters
     ----------
     velocity: Vector3
-        Aircraft velocity in NED world-frame [m/s].
+        Relative velocity in NED world-frame [m/s].
     orientation: Quaternion
         Body to world orientation quaternion.
-    wind_velocity: Vector3
-        Wind velocity in NED world-frame [m/s].
     air_density: FloatScalar
         Density of air [kg/m^3].
     coef_drag: FloatScalar
@@ -396,17 +393,13 @@ def calculate_aero_forces(
     force_body: Vector3
         Resultant aerodynamic force (lift + drag + sideslip) in FRD body-frame [N].
     """
-    # Air-relative velocity
-    relative_velocity = velocity - wind_velocity
 
-    airspeed = norm_3(relative_velocity)
+    airspeed = norm_3(velocity)
     q = calculate_dynamic_pressure(airspeed, air_density)
-    alpha = calculate_angle_of_attack(relative_velocity, orientation)
-    beta = calculate_angle_of_sideslip(relative_velocity, orientation)
+    alpha = calculate_angle_of_attack(velocity, orientation)
+    beta = calculate_angle_of_sideslip(velocity, orientation)
 
-    drag = calculate_drag(
-        relative_velocity, orientation, airspeed, q, coef_drag, surface_areas
-    )
+    drag = calculate_drag(velocity, orientation, airspeed, q, coef_drag, surface_areas)
     lift = calculate_lift(alpha, q, coef_lift, surface_areas[2], max_attack_angle)
     sideslip = calculate_sideslip(
         beta, q, coef_sideslip, surface_areas[1], max_sideslip_angle
@@ -431,11 +424,11 @@ def calculate_control_moments(
     Parameters
     ----------
     velocity: Vector3
-        Velocity in NED world-frame [m/s].
+        Relative velocity in NED world-frame [m/s].
     orientation: Quaternion
         Body to world orientation quaternion.
     airspeed: FloatScalar
-        True airspeed [m/s].
+        True airspeed (magnitude of relative velocity) [m/s].
     dynamic_pressure: FloatScalar
         Aerodynamic pressure on body [N/m^2].
     aileron: FloatScalar

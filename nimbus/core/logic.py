@@ -6,14 +6,14 @@ import jax.numpy as jnp
 
 from .config import AircraftConfig, PhysicsConfig
 from .interface import calculate_g_force
-from .primitives import FLOAT_DTYPE, FloatScalar, Vector3
-from .state import Aircraft, Controls, PIDControllerState
+from .primitives import FLOAT_DTYPE, FloatScalar
+from .state import Aircraft, Controls, PIDControllerState, Wind
 
 
 def apply_g_limiter(
     aircraft: Aircraft,
     controls: Controls,
-    wind_velocity: Vector3,
+    wind: Wind,
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
     dt: FloatScalar,
@@ -27,8 +27,8 @@ def apply_g_limiter(
         Current aircraft state.
     controls : Controls
         Raw pilot control inputs.
-    wind_velocity : Vector3
-        Wind velocity in NED world frame [m/s].
+    wind : Wind
+        Wind state with mean and gust components.
     aircraft_config : AircraftConfig
         Aircraft configuration including G-limits and PID controller config.
     physics_config : PhysicsConfig
@@ -41,9 +41,7 @@ def apply_g_limiter(
     tuple[Controls, PIDControllerState]
         Adjusted controls with G-limiting applied and updated PID controller state.
     """
-    g_forces = calculate_g_force(
-        aircraft, wind_velocity, aircraft_config, physics_config
-    )
+    g_forces = calculate_g_force(aircraft, wind, aircraft_config, physics_config)
 
     # Negate for pilot convention: positive G = pulling up
     current_g = -g_forces[2]

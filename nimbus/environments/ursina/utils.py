@@ -21,10 +21,9 @@ from ...core.primitives import (
     Matrix,
     Quaternion,
     Vector,
-    Vector3,
     norm_3,
 )
-from ...core.state import Aircraft
+from ...core.state import Aircraft, Wind
 
 
 def ned_to_eun(position_ned: Vector) -> Vector:
@@ -296,7 +295,7 @@ def generate_blank_texture(
 
 def compute_flight_metrics(
     aircraft: Aircraft,
-    wind_velocity: Vector3,
+    wind: Wind,
     heightmap: Matrix,
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
@@ -316,7 +315,7 @@ def compute_flight_metrics(
     )
 
     # G-force
-    g = -calculate_g_force(aircraft, wind_velocity, aircraft_config, physics_config)[2]
+    g = -calculate_g_force(aircraft, wind, aircraft_config, physics_config)[2]
 
     # Heading
     yaw, _, _ = quaternion.to_euler_zyx(aircraft.body.orientation)

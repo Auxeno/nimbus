@@ -305,8 +305,11 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
 
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
-    result_1 = step_aircraft_rk4(aircraft, wind_velocity, aircraft_config, physics_config, dt)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
+    result_1 = step_aircraft_rk4(aircraft, wind, aircraft_config, physics_config, dt)
     # Aircraft should have moved forward
     assert result_1.body.position[0] > aircraft.body.position[0]
     # Orientation should be normalised
@@ -332,7 +335,7 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
         ),
     )
     result_2 = step_aircraft_rk4(
-        aircraft_controlled, wind_velocity, aircraft_config, physics_config, dt
+        aircraft_controlled, wind, aircraft_config, physics_config, dt
     )
     # Should have angular velocity due to control inputs
     assert jnp.linalg.norm(result_2.body.angular_velocity) > 0.0
@@ -355,20 +358,20 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
-    result_3 = step_aircraft_rk4(aircraft_hover, wind_velocity, aircraft_config, physics_config, dt)
+    result_3 = step_aircraft_rk4(aircraft_hover, wind, aircraft_config, physics_config, dt)
     # Should fall under gravity
     assert result_3.body.position[2] > body_hover.position[2]  # Positive down in NED
 
     # Edge case 1 - very small timestep
     dt_small = jnp.array(0.0001, dtype=FLOAT_DTYPE)
-    result_4 = step_aircraft_rk4(aircraft, wind_velocity, aircraft_config, physics_config, dt_small)
+    result_4 = step_aircraft_rk4(aircraft, wind, aircraft_config, physics_config, dt_small)
     # Changes should be very small
     position_change = jnp.linalg.norm(result_4.body.position - body.position)
     assert position_change < 0.01
 
     # Edge case 2 - larger timestep
     dt_large = jnp.array(0.1, dtype=FLOAT_DTYPE)
-    result_5 = step_aircraft_rk4(aircraft, wind_velocity, aircraft_config, physics_config, dt_large)
+    result_5 = step_aircraft_rk4(aircraft, wind, aircraft_config, physics_config, dt_large)
     # Changes should be larger
     position_change_large = jnp.linalg.norm(result_5.body.position - body.position)
     assert position_change_large > position_change
@@ -402,7 +405,7 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
     )
 
     step_aircraft_rk4_vmap = jax.vmap(
-        lambda a: step_aircraft_rk4(a, wind_velocity, aircraft_config, physics_config, dt)
+        lambda a: step_aircraft_rk4(a, wind, aircraft_config, physics_config, dt)
     )
     vmap_results = step_aircraft_rk4_vmap(aircraft_batch)
 
@@ -665,8 +668,11 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
 
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
-    result_1 = step_aircraft_euler(aircraft, wind_velocity, aircraft_config, physics_config, dt)
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    )
+    result_1 = step_aircraft_euler(aircraft, wind, aircraft_config, physics_config, dt)
     # Aircraft should have moved forward
     assert result_1.body.position[0] > aircraft.body.position[0]
     # Orientation should be normalised
@@ -692,14 +698,14 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
         ),
     )
     result_2 = step_aircraft_euler(
-        aircraft_controlled, wind_velocity, aircraft_config, physics_config, dt
+        aircraft_controlled, wind, aircraft_config, physics_config, dt
     )
     # Should have angular velocity due to control inputs
     assert jnp.linalg.norm(result_2.body.angular_velocity) > 0.0
 
     # Explicit Euler uses the *old* ω to update q; with ω0 = 0, q won't change on the first step.
     # Take a second step, then require orientation to have changed.
-    result_3 = step_aircraft_euler(result_2, wind_velocity, aircraft_config, physics_config, dt)
+    result_3 = step_aircraft_euler(result_2, wind, aircraft_config, physics_config, dt)
 
     assert not jnp.allclose(result_3.body.orientation, body.orientation, atol=1e-6)
     assert jnp.isclose(jnp.linalg.norm(result_3.body.orientation), 1.0, atol=1e-5)
@@ -720,21 +726,21 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
-    result = step_aircraft_euler(aircraft_hover, wind_velocity, aircraft_config, physics_config, dt)
-    result_3 = step_aircraft_euler(result, wind_velocity, aircraft_config, physics_config, dt)
+    result = step_aircraft_euler(aircraft_hover, wind, aircraft_config, physics_config, dt)
+    result_3 = step_aircraft_euler(result, wind, aircraft_config, physics_config, dt)
     # Should fall under gravity
     assert result_3.body.position[2] > body_hover.position[2]  # Positive down in NED
 
     # Edge case 1 - very small timestep
     dt_small = jnp.array(0.0001, dtype=FLOAT_DTYPE)
-    result_4 = step_aircraft_euler(aircraft, wind_velocity, aircraft_config, physics_config, dt_small)
+    result_4 = step_aircraft_euler(aircraft, wind, aircraft_config, physics_config, dt_small)
     # Changes should be very small
     position_change = jnp.linalg.norm(result_4.body.position - body.position)
     assert position_change < 0.01
 
     # Edge case 2 - larger timestep
     dt_large = jnp.array(0.1, dtype=FLOAT_DTYPE)
-    result_5 = step_aircraft_euler(aircraft, wind_velocity, aircraft_config, physics_config, dt_large)
+    result_5 = step_aircraft_euler(aircraft, wind, aircraft_config, physics_config, dt_large)
     # Changes should be larger
     position_change_large = jnp.linalg.norm(result_5.body.position - body.position)
     assert position_change_large > position_change
@@ -768,7 +774,7 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
     )
 
     step_aircraft_euler_vmap = jax.vmap(
-        lambda a: step_aircraft_euler(a, wind_velocity, aircraft_config, physics_config, dt)
+        lambda a: step_aircraft_euler(a, wind, aircraft_config, physics_config, dt)
     )
     vmap_results = step_aircraft_euler_vmap(aircraft_batch)
 

@@ -668,7 +668,7 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     """Test combined aerodynamic forces calculation."""
     # Standard case 1 - level forward flight, no sideslip
     zero_angle = jnp.array(0.0, dtype=FLOAT_DTYPE)
-    velocity = jnp.array([20.0, 0.0, 0.0], dtype=FLOAT_DTYPE)
+    velocity = jnp.array([20.0, 0.0, 0.0], dtype=FLOAT_DTYPE)  # Relative velocity
     orientation = from_euler_zyx(zero_angle, zero_angle, zero_angle)
     coef_drag = jnp.array(0.5, dtype=FLOAT_DTYPE)
     coef_lift = jnp.array(2.0, dtype=FLOAT_DTYPE)
@@ -677,11 +677,9 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     max_sideslip_angle = jnp.array(20.0, dtype=FLOAT_DTYPE)  # degrees
     surface_areas = jnp.array([3.0, 2.0, 4.0], dtype=FLOAT_DTYPE)  # front, side, top
     air_density = jnp.array(1.225, dtype=FLOAT_DTYPE)
-    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
     result_1 = calculate_aero_forces(
         velocity,
         orientation,
-        wind_velocity,
         air_density,
         coef_drag,
         coef_lift,
@@ -702,7 +700,6 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     result_2 = calculate_aero_forces(
         velocity,
         orientation_pitched,
-        wind_velocity,
         air_density,
         coef_drag,
         coef_lift,
@@ -722,7 +719,6 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     result_3 = calculate_aero_forces(
         velocity,
         orientation_yawed,
-        wind_velocity,
         air_density,
         coef_drag,
         coef_lift,
@@ -742,7 +738,6 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     result_4 = calculate_aero_forces(
         velocity,
         orientation_combined,
-        wind_velocity,
         air_density,
         coef_drag,
         coef_lift,
@@ -761,7 +756,6 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     result_5 = calculate_aero_forces(
         velocity_zero,
         orientation,
-        wind_velocity,
         air_density,
         coef_drag,
         coef_lift,
@@ -778,7 +772,6 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     result_6 = calculate_aero_forces(
         velocity_low,
         orientation_pitched,
-        wind_velocity,
         air_density,
         coef_drag,
         coef_lift,
@@ -797,7 +790,6 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     result_7 = calculate_aero_forces(
         velocity,
         orientation_high_aoa,
-        wind_velocity,
         air_density,
         coef_drag,
         coef_lift,
@@ -815,7 +807,6 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     result_8 = calculate_aero_forces(
         velocity,
         orientation,
-        wind_velocity,
         zero_air_density,
         coef_drag,
         coef_lift,
@@ -854,12 +845,10 @@ def test_calculate_aero_forces(jit_mode: str) -> None:
     surface_areas_batch = jnp.tile(surface_areas, (4, 1))
     air_densities = jnp.array([1.225, 1.225, 1.225, 1.225], dtype=FLOAT_DTYPE)
 
-    wind_velocities_batch = jnp.zeros((4, 3), dtype=FLOAT_DTYPE)
     calculate_aero_forces_vmap = jax.vmap(calculate_aero_forces)
     vmap_results = calculate_aero_forces_vmap(
         velocities,
         orientations,
-        wind_velocities_batch,
         air_densities,
         coef_drags,
         coef_lifts,

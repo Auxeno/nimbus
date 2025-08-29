@@ -179,7 +179,7 @@ class TextUI(Entity):
         # Flight metrics
         alpha, speed, g_force, heading, agl, vs = compute_flight_metrics(
             simulation_state.aircraft,
-            simulation_state.wind.mean + simulation_state.wind.gust,
+            simulation_state.wind,
             heightmap,
             self.config.aircraft,
             self.config.physics,
@@ -624,7 +624,7 @@ class AircraftEntity(Entity):
             # Update wingtip trails
             g_force_vec = calculate_g_force(
                 simulation.aircraft,
-                simulation.wind.mean + simulation.wind.gust,
+                simulation.wind,
                 self.simulation_config.aircraft,
                 self.simulation_config.physics,
             )
