@@ -97,6 +97,27 @@ class InitialConditions:
             ),
         )
 
+    @classmethod
+    def showcase(cls) -> "InitialConditions":
+        return cls(
+            position=(
+                Fixed(3000),
+                Fixed(500.0),
+                Fixed(-730.0),
+            ),
+            velocity=(Fixed(-150.0), Fixed(0.0), Fixed(0.0)),
+            orientation_euler=(Fixed(180.0), Fixed(0.0), Fixed(0.0)),
+            angular_velocity=(Fixed(0.0), Fixed(0.0), Fixed(0.0)),
+            wind_speed=Uniform(0.0, 10.0),
+            wind_direction=Uniform(0.0, 360.0),
+            waypoints=(
+                (Fixed(-2000.0), Fixed(869.0), Fixed(300.0)),
+                (Fixed(-774.0), Fixed(1715.0), Fixed(11.0)),
+                (Fixed(1000.0), Fixed(1486.0), Fixed(79.0)),
+                (Fixed(1891.0), Fixed(479.0), Fixed(-93.0)),
+            ),
+        )
+
 
 def generate_terrain_map(key: PRNGKey, terrain_config: TerrainConfig) -> Matrix:
     return generate_heightmap(
