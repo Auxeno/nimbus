@@ -26,6 +26,7 @@ from nimbus.core.state import (
     Meta,
     PIDControllerState,
     Simulation,
+    Wind,
 )
 from nimbus.core.terrain import generate_heightmap
 
@@ -59,12 +60,18 @@ def test_set_controls(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=old_controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
+    )
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
     )
     simulation = Simulation(
         aircraft=aircraft,
+        wind=wind,
         time=jnp.array(0.0, dtype=FLOAT_DTYPE),
     )
     new_controls = Controls(
@@ -147,8 +154,9 @@ def test_freeze_aircraft(jit_mode: str) -> None:
         meta=meta,
         body=body_moving,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     result_1 = freeze_aircraft(aircraft)
@@ -179,8 +187,9 @@ def test_freeze_aircraft(jit_mode: str) -> None:
         meta=meta,
         body=body_stationary,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     result_2 = freeze_aircraft(aircraft_stationary)
@@ -198,8 +207,9 @@ def test_freeze_aircraft(jit_mode: str) -> None:
         meta=meta,
         body=body_fast,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     result_3 = freeze_aircraft(aircraft_fast)
@@ -286,15 +296,17 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
 
-    result_1 = step_aircraft_rk4(aircraft, aircraft_config, physics_config, dt)
+    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    result_1 = step_aircraft_rk4(aircraft, wind_velocity, aircraft_config, physics_config, dt)
     # Aircraft should have moved forward
     assert result_1.body.position[0] > aircraft.body.position[0]
     # Orientation should be normalised
@@ -314,12 +326,13 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls_active,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     result_2 = step_aircraft_rk4(
-        aircraft_controlled, aircraft_config, physics_config, dt
+        aircraft_controlled, wind_velocity, aircraft_config, physics_config, dt
     )
     # Should have angular velocity due to control inputs
     assert jnp.linalg.norm(result_2.body.angular_velocity) > 0.0
@@ -337,24 +350,25 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
         meta=meta,
         body=body_hover,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
-    result_3 = step_aircraft_rk4(aircraft_hover, aircraft_config, physics_config, dt)
+    result_3 = step_aircraft_rk4(aircraft_hover, wind_velocity, aircraft_config, physics_config, dt)
     # Should fall under gravity
     assert result_3.body.position[2] > body_hover.position[2]  # Positive down in NED
 
     # Edge case 1 - very small timestep
     dt_small = jnp.array(0.0001, dtype=FLOAT_DTYPE)
-    result_4 = step_aircraft_rk4(aircraft, aircraft_config, physics_config, dt_small)
+    result_4 = step_aircraft_rk4(aircraft, wind_velocity, aircraft_config, physics_config, dt_small)
     # Changes should be very small
     position_change = jnp.linalg.norm(result_4.body.position - body.position)
     assert position_change < 0.01
 
     # Edge case 2 - larger timestep
     dt_large = jnp.array(0.1, dtype=FLOAT_DTYPE)
-    result_5 = step_aircraft_rk4(aircraft, aircraft_config, physics_config, dt_large)
+    result_5 = step_aircraft_rk4(aircraft, wind_velocity, aircraft_config, physics_config, dt_large)
     # Changes should be larger
     position_change_large = jnp.linalg.norm(result_5.body.position - body.position)
     assert position_change_large > position_change
@@ -388,7 +402,7 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
     )
 
     step_aircraft_rk4_vmap = jax.vmap(
-        lambda a: step_aircraft_rk4(a, aircraft_config, physics_config, dt)
+        lambda a: step_aircraft_rk4(a, wind_velocity, aircraft_config, physics_config, dt)
     )
     vmap_results = step_aircraft_rk4_vmap(aircraft_batch)
 
@@ -407,17 +421,17 @@ def test_step(jit_mode: str) -> None:
     terrain_config = TerrainConfig(resolution=64)
     heightmap = generate_heightmap(
         key,
-        resolution=terrain_config.resolution,
-        base_scale=terrain_config.base_scale,
-        octaves=terrain_config.octaves,
-        persistence=terrain_config.persistence,
-        lacunarity=terrain_config.lacunarity,
-        mountain_gain=terrain_config.mountain_gain,
-        bump_gain=terrain_config.bump_gain,
-        padding=terrain_config.padding,
+        resolution=jnp.array(terrain_config.resolution, dtype=INT_DTYPE),
+        base_scale=jnp.array(terrain_config.base_scale, dtype=FLOAT_DTYPE),
+        octaves=jnp.array(terrain_config.octaves, dtype=INT_DTYPE),
+        persistence=jnp.array(terrain_config.persistence, dtype=FLOAT_DTYPE),
+        lacunarity=jnp.array(terrain_config.lacunarity, dtype=FLOAT_DTYPE),
+        mountain_gain=jnp.array(terrain_config.mountain_gain, dtype=FLOAT_DTYPE),
+        bump_gain=jnp.array(terrain_config.bump_gain, dtype=FLOAT_DTYPE),
+        padding=jnp.array(terrain_config.padding, dtype=INT_DTYPE),
     )
     key_route = jax.random.PRNGKey(100)
-    initial_conditions = InitialConditions()
+    initial_conditions = InitialConditions.default()
     route = generate_route(key_route, initial_conditions)
 
     # Standard case 1 - normal flight step
@@ -440,17 +454,24 @@ def test_step(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
+    )
+    wind = Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
     )
     simulation = Simulation(
         aircraft=aircraft,
+        wind=wind,
         time=jnp.array(0.0, dtype=FLOAT_DTYPE),
     )
     config = SimulationConfig(dt=0.01)
 
-    result_1, route_1 = step(simulation, heightmap, route, config)
+    key_step = jax.random.PRNGKey(1)
+    result_1, route_1 = step(key_step, simulation, heightmap, route, config)
     # Time should advance
     assert result_1.time > simulation.time
     assert jnp.isclose(result_1.time, 0.01, atol=EPS)
@@ -470,15 +491,17 @@ def test_step(jit_mode: str) -> None:
         meta=meta,
         body=body_low,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     simulation_low = Simulation(
         aircraft=aircraft_low,
+        wind=wind,
         time=jnp.array(0.0, dtype=FLOAT_DTYPE),
     )
-    result_2, route_2 = step(simulation_low, heightmap, route, config)
+    result_2, route_2 = step(key_step, simulation_low, heightmap, route, config)
     assert result_2.aircraft.meta.active == jnp.array(True, dtype=bool)
     # Should still be active if above terrain
     # With terrain at 0.9 (normalised), actual height is negative (mountain)
@@ -489,7 +512,8 @@ def test_step(jit_mode: str) -> None:
     current_route = route
     time_steps = 10
     for i in range(time_steps):
-        current_sim, current_route = step(current_sim, heightmap, current_route, config)
+        key_step = jax.random.PRNGKey(i)
+        current_sim, current_route = step(key_step, current_sim, heightmap, current_route, config)
     # Time should have advanced by dt * steps
     expected_time = jnp.array(0.01 * time_steps, dtype=FLOAT_DTYPE)
     assert jnp.isclose(current_sim.time, expected_time, atol=EPS)
@@ -510,15 +534,17 @@ def test_step(jit_mode: str) -> None:
         meta=meta,
         body=body_underground,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     simulation_underground = Simulation(
         aircraft=aircraft_underground,
+        wind=wind,
         time=jnp.array(0.0, dtype=FLOAT_DTYPE),
     )
-    result_3, route_3 = step(simulation_underground, heightmap, route, config)
+    result_3, route_3 = step(key_step, simulation_underground, heightmap, route, config)
     # Should be inactive due to collision
     assert result_3.aircraft.meta.active == jnp.array(False, dtype=bool)
     # Velocity should be zero (frozen)
@@ -540,15 +566,17 @@ def test_step(jit_mode: str) -> None:
         meta=meta_inactive,
         body=body,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     simulation_inactive = Simulation(
         aircraft=aircraft_inactive,
+        wind=wind,
         time=jnp.array(0.0, dtype=FLOAT_DTYPE),
     )
-    result_4, route_4 = step(simulation_inactive, heightmap, route, config)
+    result_4, route_4 = step(key_step, simulation_inactive, heightmap, route, config)
     # Should remain inactive
     assert result_4.aircraft.meta.active == jnp.array(False, dtype=bool)
     # Time should still advance
@@ -579,16 +607,21 @@ def test_step(jit_mode: str) -> None:
         metas, bodies, controls_batch, g_limiter_pid_batch
     )
     times = jnp.zeros(3, dtype=FLOAT_DTYPE)
-    simulations = jax.vmap(Simulation)(aircraft_batch, times)
+    winds_batch = jax.vmap(lambda _: Wind(
+        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+    ))(jnp.arange(3))
+    simulations = jax.vmap(Simulation)(aircraft_batch, winds_batch, times)
 
     # Create routes for batch processing
     route_keys = jax.random.split(jax.random.PRNGKey(200), 3)
-    initial_conditions = InitialConditions()
+    initial_conditions = InitialConditions.default()
     routes = jax.vmap(lambda k: generate_route(k, initial_conditions))(route_keys)
     heightmaps = jnp.tile(heightmap[None, :, :], (3, 1, 1))
 
-    step_vmap = jax.vmap(lambda sim, hm, rt: step(sim, hm, rt, config))
-    vmap_results, vmap_routes = step_vmap(simulations, heightmaps, routes)
+    step_keys = jax.random.split(jax.random.PRNGKey(300), 3)
+    step_vmap = jax.vmap(lambda k, sim, hm, rt: step(k, sim, hm, rt, config))
+    vmap_results, vmap_routes = step_vmap(step_keys, simulations, heightmaps, routes)
 
     assert vmap_results.time.shape == (3,)
     assert jnp.all(vmap_results.time == 0.01)
@@ -623,15 +656,17 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
     dt = jnp.array(0.01, dtype=FLOAT_DTYPE)
 
-    result_1 = step_aircraft_euler(aircraft, aircraft_config, physics_config, dt)
+    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    result_1 = step_aircraft_euler(aircraft, wind_velocity, aircraft_config, physics_config, dt)
     # Aircraft should have moved forward
     assert result_1.body.position[0] > aircraft.body.position[0]
     # Orientation should be normalised
@@ -651,19 +686,20 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
         meta=meta,
         body=body,
         controls=controls_active,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
     result_2 = step_aircraft_euler(
-        aircraft_controlled, aircraft_config, physics_config, dt
+        aircraft_controlled, wind_velocity, aircraft_config, physics_config, dt
     )
     # Should have angular velocity due to control inputs
     assert jnp.linalg.norm(result_2.body.angular_velocity) > 0.0
 
     # Explicit Euler uses the *old* ω to update q; with ω0 = 0, q won't change on the first step.
     # Take a second step, then require orientation to have changed.
-    result_3 = step_aircraft_euler(result_2, aircraft_config, physics_config, dt)
+    result_3 = step_aircraft_euler(result_2, wind_velocity, aircraft_config, physics_config, dt)
 
     assert not jnp.allclose(result_3.body.orientation, body.orientation, atol=1e-6)
     assert jnp.isclose(jnp.linalg.norm(result_3.body.orientation), 1.0, atol=1e-5)
@@ -679,25 +715,26 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
         meta=meta,
         body=body_hover,
         controls=controls,
-        g_limiter_pd=PIDControllerState(
-            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE)
+        g_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
-    result = step_aircraft_euler(aircraft_hover, aircraft_config, physics_config, dt)
-    result_3 = step_aircraft_euler(result, aircraft_config, physics_config, dt)
+    result = step_aircraft_euler(aircraft_hover, wind_velocity, aircraft_config, physics_config, dt)
+    result_3 = step_aircraft_euler(result, wind_velocity, aircraft_config, physics_config, dt)
     # Should fall under gravity
     assert result_3.body.position[2] > body_hover.position[2]  # Positive down in NED
 
     # Edge case 1 - very small timestep
     dt_small = jnp.array(0.0001, dtype=FLOAT_DTYPE)
-    result_4 = step_aircraft_euler(aircraft, aircraft_config, physics_config, dt_small)
+    result_4 = step_aircraft_euler(aircraft, wind_velocity, aircraft_config, physics_config, dt_small)
     # Changes should be very small
     position_change = jnp.linalg.norm(result_4.body.position - body.position)
     assert position_change < 0.01
 
     # Edge case 2 - larger timestep
     dt_large = jnp.array(0.1, dtype=FLOAT_DTYPE)
-    result_5 = step_aircraft_euler(aircraft, aircraft_config, physics_config, dt_large)
+    result_5 = step_aircraft_euler(aircraft, wind_velocity, aircraft_config, physics_config, dt_large)
     # Changes should be larger
     position_change_large = jnp.linalg.norm(result_5.body.position - body.position)
     assert position_change_large > position_change
@@ -731,7 +768,7 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
     )
 
     step_aircraft_euler_vmap = jax.vmap(
-        lambda a: step_aircraft_euler(a, aircraft_config, physics_config, dt)
+        lambda a: step_aircraft_euler(a, wind_velocity, aircraft_config, physics_config, dt)
     )
     vmap_results = step_aircraft_euler_vmap(aircraft_batch)
 

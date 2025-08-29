@@ -18,7 +18,7 @@ def test_generate_simulation(jit_mode: str) -> None:
     key = jax.random.PRNGKey(42)
 
     # Standard case 1 - single simulation generation
-    initial_conditions = InitialConditions()
+    initial_conditions = InitialConditions.default()
     result_1 = generate_simulation(key, initial_conditions)
 
     # Check aircraft state
@@ -59,6 +59,14 @@ def test_generate_simulation(jit_mode: str) -> None:
 
     # Check initial time
     assert result_1.time == jnp.array(0.0, dtype=FLOAT_DTYPE)
+    
+    # Check wind state initialization
+    assert result_1.wind.mean.shape == (3,)
+    assert result_1.wind.gust.shape == (3,)
+    # Gusts should be initialized to zero
+    assert jnp.allclose(result_1.wind.gust, jnp.zeros(3, dtype=FLOAT_DTYPE), atol=EPS)
+    # Mean wind should have some magnitude (varies based on random wind conditions)
+    assert result_1.wind.mean.dtype == FLOAT_DTYPE
 
     # Standard case 2 - deterministic with same key
     result_2 = generate_simulation(key, initial_conditions)
@@ -100,6 +108,8 @@ def test_generate_simulation(jit_mode: str) -> None:
     assert vmap_results.aircraft.body.orientation.shape == (5, 4)
     assert vmap_results.aircraft.body.angular_velocity.shape == (5, 3)
     assert vmap_results.time.shape == (5,)
+    assert vmap_results.wind.mean.shape == (5, 3)
+    assert vmap_results.wind.gust.shape == (5, 3)
 
     # All aircraft should have same altitude
     assert jnp.all(vmap_results.aircraft.body.position[:, 2] == -500.0)

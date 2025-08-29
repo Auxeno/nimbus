@@ -63,8 +63,9 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
 
+    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
     result_1 = calculate_translational_acceleration(
-        aircraft, aircraft_config, physics_config
+        aircraft, wind_velocity, aircraft_config, physics_config
     )
 
     # Check shape
@@ -91,7 +92,7 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
         ),
     )
     result_2 = calculate_translational_acceleration(
-        aircraft_hover, aircraft_config, physics_config
+        aircraft_hover, wind_velocity, aircraft_config, physics_config
     )
 
     # Should have acceleration mainly from gravity
@@ -114,7 +115,7 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
         ),
     )
     result_3 = calculate_translational_acceleration(
-        aircraft_high, aircraft_config, physics_config
+        aircraft_high, wind_velocity, aircraft_config, physics_config
     )
 
     # At high altitude, air density is lower, so drag and lift are reduced
@@ -144,7 +145,7 @@ def test_calculate_translational_acceleration(jit_mode: str) -> None:
 
     accel_vmap = jax.vmap(
         lambda a: calculate_translational_acceleration(
-            a, aircraft_config, physics_config
+            a, wind_velocity, aircraft_config, physics_config
         )
     )
     vmap_results = accel_vmap(aircraft_batch)
@@ -308,8 +309,9 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
 
+    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
     dx, dv, dq, dw = aircraft_state_derivatives(
-        aircraft, aircraft_config, physics_config
+        aircraft, wind_velocity, aircraft_config, physics_config
     )
 
     # Check shapes
@@ -362,7 +364,7 @@ def test_aircraft_state_derivatives(jit_mode: str) -> None:
     )
 
     derivatives_vmap = jax.vmap(
-        lambda a: aircraft_state_derivatives(a, aircraft_config, physics_config)
+        lambda a: aircraft_state_derivatives(a, wind_velocity, aircraft_config, physics_config)
     )
     dx_batch, dv_batch, dq_batch, dw_batch = derivatives_vmap(aircraft_batch)
 
@@ -378,14 +380,14 @@ def test_terrain_collision(jit_mode: str) -> None:
     terrain_config = TerrainConfig(resolution=64)
     heightmap = generate_heightmap(
         key,
-        resolution=terrain_config.resolution,
-        base_scale=terrain_config.base_scale,
-        octaves=terrain_config.octaves,
-        persistence=terrain_config.persistence,
-        lacunarity=terrain_config.lacunarity,
-        mountain_gain=terrain_config.mountain_gain,
-        bump_gain=terrain_config.bump_gain,
-        padding=terrain_config.padding,
+        resolution=jnp.array(terrain_config.resolution, dtype=INT_DTYPE),
+        base_scale=jnp.array(terrain_config.base_scale, dtype=FLOAT_DTYPE),
+        octaves=jnp.array(terrain_config.octaves, dtype=INT_DTYPE),
+        persistence=jnp.array(terrain_config.persistence, dtype=FLOAT_DTYPE),
+        lacunarity=jnp.array(terrain_config.lacunarity, dtype=FLOAT_DTYPE),
+        mountain_gain=jnp.array(terrain_config.mountain_gain, dtype=FLOAT_DTYPE),
+        bump_gain=jnp.array(terrain_config.bump_gain, dtype=FLOAT_DTYPE),
+        padding=jnp.array(terrain_config.padding, dtype=INT_DTYPE),
     )
     map_config = MapConfig()
 
@@ -534,7 +536,8 @@ def test_calculate_g_force(jit_mode: str) -> None:
     aircraft_config = AircraftConfig()
     physics_config = PhysicsConfig()
 
-    result_1 = calculate_g_force(aircraft, aircraft_config, physics_config)
+    wind_velocity = jnp.zeros(3, dtype=FLOAT_DTYPE)
+    result_1 = calculate_g_force(aircraft, wind_velocity, aircraft_config, physics_config)
 
     # Check shape
     assert result_1.shape == (3,)
@@ -557,7 +560,7 @@ def test_calculate_g_force(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
-    result_2 = calculate_g_force(aircraft_high_g, aircraft_config, physics_config)
+    result_2 = calculate_g_force(aircraft_high_g, wind_velocity, aircraft_config, physics_config)
 
     # Should experience higher G-force with control inputs
     assert jnp.linalg.norm(result_2) != jnp.linalg.norm(result_1)
@@ -585,7 +588,7 @@ def test_calculate_g_force(jit_mode: str) -> None:
     )
 
     g_force_vmap = jax.vmap(
-        lambda a: calculate_g_force(a, aircraft_config, physics_config)
+        lambda a: calculate_g_force(a, wind_velocity, aircraft_config, physics_config)
     )
     vmap_results = g_force_vmap(aircraft_batch)
 
@@ -621,7 +624,7 @@ def test_waypoint_hit(jit_mode: str) -> None:
         ),
     )
     key = jax.random.PRNGKey(42)
-    initial_conditions = InitialConditions()
+    initial_conditions = InitialConditions.default()
     route = generate_route(key, initial_conditions)
 
     result_1 = waypoint_hit(aircraft, route, route_config)
@@ -683,7 +686,7 @@ def test_next_waypoint(jit_mode: str) -> None:
     """Test waypoint advancement."""
     # Standard case 1 - advance to next waypoint
     key = jax.random.PRNGKey(42)
-    initial_conditions = InitialConditions()
+    initial_conditions = InitialConditions.default()
     route = generate_route(key, initial_conditions)
     loop = jnp.array(False, dtype=bool)
 
@@ -727,7 +730,7 @@ def test_next_waypoint(jit_mode: str) -> None:
 
     # Test with vmap - multiple routes
     keys = jax.random.split(jax.random.PRNGKey(42), 3)
-    initial_conditions = InitialConditions()
+    initial_conditions = InitialConditions.default()
     routes = jax.vmap(lambda k: generate_route(k, initial_conditions))(keys)
     loops = jnp.array([False, True, False], dtype=bool)
 
