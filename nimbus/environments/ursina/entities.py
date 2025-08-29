@@ -204,6 +204,10 @@ class IconUI(Entity):
         self.onscreen_alpha_multiplier = hex_to_rgba("#FFFFFF22")
         self.offscreen_alpha_multiplier = hex_to_rgba("#FFFFFFFF")
 
+        # Distance-based fade parameters [m]
+        self.start_fade_distance = 1500.0
+        self.end_fade_distance = 1000.0
+
         # Screen boundary limits for icon clamping
         self.screen_limit = Vec3(0.74, 0.45, 0)
 
@@ -267,7 +271,7 @@ class IconUI(Entity):
             self.icon_entity.visible = True
             self.offscreen_indicator.visible = False
 
-            # Apply reduced alpha when on-screen
+            # Apply reduced alpha when on-screen (original behavior for icon)
             reduced_color = rgba(
                 self.base_color.r * self.onscreen_alpha_multiplier.r,
                 self.base_color.g * self.onscreen_alpha_multiplier.g,
@@ -275,6 +279,23 @@ class IconUI(Entity):
                 self.base_color.a * self.onscreen_alpha_multiplier.a,
             )
             self.icon_entity.color = reduced_color
+
+            # Calculate distance-based alpha fade for text only
+            if distance_m <= self.end_fade_distance:
+                # Within fade range - alpha goes to 0 at end_fade_distance
+                alpha = 0.0
+            elif distance_m >= self.start_fade_distance:
+                # Beyond fade range - use base color (no fade)
+                alpha = 1.0
+            else:
+                # Interpolate alpha between start and end fade distances
+                fade_factor = (distance_m - self.end_fade_distance) / (
+                    self.start_fade_distance - self.end_fade_distance
+                )
+                alpha = fade_factor
+
+            # Apply the calculated alpha to text
+            self.distance_text.color = self.base_color * rgba(1.0, 1.0, 1.0, alpha)
         else:
             # Clamp to screen edge with full alpha
             direction = Vec3(screen_pos.x, screen_pos.y, 0).normalized()
@@ -286,6 +307,7 @@ class IconUI(Entity):
 
             # Apply full alpha when off-screen
             self.icon_entity.color = self.base_color
+            self.distance_text.color = self.base_color
 
             # Position offscreen indicator slightly inside
             self.offscreen_indicator.position = self.icon_entity.position * 0.9

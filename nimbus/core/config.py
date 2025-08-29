@@ -168,7 +168,7 @@ class RouteConfig:
 class WindConfig:
     """Configuration for wind gust generation."""
 
-    gust_intensity: float = 50.0
+    gust_intensity: float = 5.0
     """RMS intensity of wind gusts [m/s]."""
 
     gust_duration: float = 5.0
