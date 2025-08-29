@@ -4,10 +4,60 @@ from dataclasses import replace
 
 import jax.numpy as jnp
 
-from .config import AircraftConfig, PhysicsConfig
+from .config import AircraftConfig, PhysicsConfig, PIDControllerConfig
 from .interface import calculate_g_force
 from .primitives import FLOAT_DTYPE, FloatScalar
 from .state import Aircraft, Controls, PIDControllerState, Wind
+
+
+def update_pid(
+    error: FloatScalar,
+    pid_state: PIDControllerState,
+    pid_config: PIDControllerConfig,
+    dt: FloatScalar,
+) -> tuple[FloatScalar, PIDControllerState]:
+    """
+    Update PID controller state and compute control output.
+
+    Parameters
+    ----------
+    error : FloatScalar
+        Current error signal.
+    pid_state : PIDControllerState
+        Current PID controller state.
+    pid_config : PIDControllerConfig
+        PID controller configuration with gains and limits.
+    dt : FloatScalar
+        Time step for integral and derivative calculations.
+
+    Returns
+    -------
+    tuple[FloatScalar, PIDControllerState]
+        Control output and updated PID state.
+    """
+    kp = jnp.array(pid_config.kp, dtype=FLOAT_DTYPE)
+    ki = jnp.array(pid_config.ki, dtype=FLOAT_DTYPE)
+    kd = jnp.array(pid_config.kd, dtype=FLOAT_DTYPE)
+    max_correction = jnp.array(pid_config.max_correction, dtype=FLOAT_DTYPE)
+    integral_limit = jnp.array(pid_config.integral_limit, dtype=FLOAT_DTYPE)
+
+    derivative = (error - pid_state.previous_error) / dt
+
+    # Update integral with anti-windup
+    integral = jnp.where(
+        jnp.abs(error) > jnp.array(0.0, dtype=FLOAT_DTYPE),
+        pid_state.integral + error * dt,
+        jnp.array(0.0, dtype=FLOAT_DTYPE),
+    )
+    integral = jnp.clip(integral, -integral_limit, integral_limit)
+
+    # PID output
+    output = kp * error + ki * integral + kd * derivative
+    output = jnp.clip(output, -max_correction, max_correction)
+
+    new_state = PIDControllerState(previous_error=error, integral=integral)
+
+    return output, new_state
 
 
 def apply_g_limiter(
@@ -52,33 +102,12 @@ def apply_g_limiter(
     saturated_g = jnp.clip(current_g, g_min, g_max)
     error = current_g - saturated_g
 
-    kp = jnp.array(aircraft_config.g_limiter_controller_config.kp, dtype=FLOAT_DTYPE)
-    ki = jnp.array(aircraft_config.g_limiter_controller_config.ki, dtype=FLOAT_DTYPE)
-    kd = jnp.array(aircraft_config.g_limiter_controller_config.kd, dtype=FLOAT_DTYPE)
-    max_correction = jnp.array(
-        aircraft_config.g_limiter_controller_config.max_correction, dtype=FLOAT_DTYPE
+    correction, new_pid_state = update_pid(
+        error,
+        aircraft.g_limiter_pid,
+        aircraft_config.g_limiter_controller_config,
+        dt,
     )
-    integral_limit = jnp.array(
-        aircraft_config.g_limiter_controller_config.integral_limit, dtype=FLOAT_DTYPE
-    )
-
-    # Calculate PID terms
-    derivative = (error - aircraft.g_limiter_pid.previous_error) / dt
-
-    # Only accumulate integral when there's a G-limit violation
-    # Reset to zero when within acceptable tolerance
-    integral = jnp.where(
-        jnp.abs(error) > jnp.array(0.0, dtype=FLOAT_DTYPE),
-        aircraft.g_limiter_pid.integral + error * dt,
-        jnp.array(0.0, dtype=FLOAT_DTYPE),
-    )
-
-    # Apply integral windup prevention
-    integral = jnp.clip(integral, -integral_limit, integral_limit)
-
-    # Apply PID formula
-    correction = kp * error + ki * integral + kd * derivative
-    correction = jnp.clip(correction, -max_correction, max_correction)
 
     adjusted_elevator = jnp.clip(
         controls.elevator - correction,
@@ -87,7 +116,5 @@ def apply_g_limiter(
     )
 
     adjusted_controls = replace(controls, elevator=adjusted_elevator)
-
-    new_pid_state = PIDControllerState(previous_error=error, integral=integral)
 
     return adjusted_controls, new_pid_state
