@@ -51,7 +51,7 @@ Issues = "https://github.com/auxeno/nimbus/issues"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["nimbus*"]
-exclude = ["tests*", "videos*"]
+exclude = ["tests*", "videos*", "notebooks*"]
 
 [tool.ruff]
 line-length = 100

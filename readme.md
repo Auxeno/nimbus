@@ -19,7 +19,7 @@
       <a href="#features">Features</a> |
       <a href="#installation">Installation</a> |
       <a href="#quick-start">Quick Start</a> |
-      <a href="#examples">Examples</a> |
+      <a href="#demo">Demo</a> |
       <a href="#architecture">Architecture</a>
     </h3>
 </div>
@@ -87,33 +87,52 @@ sim = ...
 aircraft_batch = jax.vmap(nimbus.step)...
 ```
 
-<!-- Code execution demo placeholder -->
-<div align="center">
-  <i>[Interactive notebook example coming soon]</i>
-</div>
+## Demo
 
-## Examples
+For a comprehensive demonstration of Nimbus capabilities, check out the demo notebook:
 
-| Example | Description | Colab |
-|---------|-------------|-------|
-| Basic Flight | Simple aircraft trajectory simulation | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]() |
-| Formation Flying | Multi-aircraft coordinated flight | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]() |
-| Terrain Following | Low-altitude terrain navigation | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]() |
-| Wind Effects | Simulating turbulence and gusts | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]() |
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/auxeno/nimbus/blob/main/notebooks/nimbus_demo.ipynb)
+
+### Ursina Visualisation Controls
+
+When running the 3D visualisation environment:
+
+| Key | Action |
+|-----|--------|
+| **W** | Pitch down (nose down) |
+| **S** | Pitch up (nose up) |
+| **A** | Yaw left |
+| **D** | Yaw right |
+| **Q** | Roll left |
+| **E** | Roll right |
+| **P** | Pause/unpause simulation |
+| **Scroll** | Zoom in/out |
 
 ## Architecture
 
-### Core Components
+### Project Structure
 
-- **`nimbus/core/`** - Core simulation modules
-  - `state.py` - Aircraft and simulation state management
-  - `physics.py` - Aerodynamic forces and moments
-  - `simulation.py` - Numerical integration (RK4/Euler)
-  - `quaternion.py` - 3D rotation operations
-  - `terrain.py` - Procedural terrain generation
-
-- **`nimbus/environments/`** - Visualisation environments
-  - `ursina/` - 3D visualisation runtime
+```
+nimbus/
+├── core/
+│   ├── config.py       # simulation configuration dataclasses
+│   ├── interface.py    # high-level physics interface
+│   ├── logic.py        # control logic (PID controllers)
+│   ├── physics.py      # aerodynamic forces and moments
+│   ├── primitives.py   # type definitions
+│   ├── quaternion.py   # 3D rotation operations
+│   ├── scenario.py     # scenario management
+│   ├── simulation.py   # numerical integration (RK4/Euler)
+│   ├── spatial.py      # spatial operations and collision
+│   ├── state.py        # aircraft and simulation state
+│   ├── terrain.py      # procedural terrain generation
+│   └── wind.py         # wind and turbulence modeling
+└── visual/
+    ├── config.py       # visualisation configuration
+    ├── entities.py     # 3D entities (aircraft, terrain)
+    ├── runtime.py      # Ursina runtime
+    └── utils.py        # visualisation utilities
+```
 
 ### Key Design Principles
 
@@ -148,7 +167,7 @@ If you use Nimbus in your research, please cite:
 
 ## License
 
-Apache 2.0 - See [LICENSE](LICENSE) for details.
+Apache 2.0 - See [licence](licence) for details.
 
 ## Acknowledgments
 
