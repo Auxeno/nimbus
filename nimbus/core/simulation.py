@@ -10,12 +10,12 @@ from . import quaternion
 from .config import AircraftConfig, PhysicsConfig, SimulationConfig
 from .interface import (
     aircraft_state_derivatives,
+    apply_g_limiter,
     next_waypoint,
     terrain_collision,
     update_wind,
     waypoint_hit,
 )
-from .logic import apply_g_limiter
 from .primitives import FLOAT_DTYPE, FloatScalar, Matrix
 from .state import Aircraft, Body, Controls, Meta, Route, Simulation, Wind
 

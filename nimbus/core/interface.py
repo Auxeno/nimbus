@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 from chex import PRNGKey
 
-from . import physics, quaternion, spatial
+from . import logic, physics, quaternion, spatial
 from .config import AircraftConfig, MapConfig, PhysicsConfig, RouteConfig, WindConfig
 from .primitives import (
     FLOAT_DTYPE,
@@ -17,7 +17,7 @@ from .primitives import (
     Vector3,
     norm_3,
 )
-from .state import Aircraft, Route, Wind
+from .state import Aircraft, Controls, PIDControllerState, Route, Wind
 from .wind import calculate_wind
 
 
@@ -309,6 +309,66 @@ def calculate_g_force(
     acceleration_g = acceleration / physics_config.gravity
 
     return acceleration_g
+
+
+def apply_g_limiter(
+    aircraft: Aircraft,
+    controls: Controls,
+    wind: Wind,
+    aircraft_config: AircraftConfig,
+    physics_config: PhysicsConfig,
+    dt: FloatScalar,
+) -> tuple[Controls, PIDControllerState]:
+    """
+    Apply G-force limiting to elevator input using PID control.
+
+    Parameters
+    ----------
+    aircraft : Aircraft
+        Current aircraft state.
+    controls : Controls
+        Raw pilot control inputs.
+    wind : Wind
+        Wind state with mean and gust components.
+    aircraft_config : AircraftConfig
+        Aircraft configuration including G-limits and PID controller config.
+    physics_config : PhysicsConfig
+        Physics configuration for G-force calculation.
+    dt : FloatScalar
+        Time step for derivative calculation.
+
+    Returns
+    -------
+    tuple[Controls, PIDControllerState]
+        Adjusted controls with G-limiting applied and updated PID controller state.
+    """
+    g_forces = calculate_g_force(aircraft, wind, aircraft_config, physics_config)
+
+    # Negate for pilot convention: positive G = pulling up
+    current_g = -g_forces[2]
+
+    g_min = jnp.array(aircraft_config.g_limit_min, dtype=FLOAT_DTYPE)
+    g_max = jnp.array(aircraft_config.g_limit_max, dtype=FLOAT_DTYPE)
+
+    saturated_g = jnp.clip(current_g, g_min, g_max)
+    error = current_g - saturated_g
+
+    correction, new_pid_state = logic.update_pid(
+        error,
+        aircraft.g_limiter_pid,
+        aircraft_config.g_limiter_controller_config,
+        dt,
+    )
+
+    adjusted_elevator = jnp.clip(
+        controls.elevator - correction,
+        jnp.array(-1.0, dtype=FLOAT_DTYPE),
+        jnp.array(1.0, dtype=FLOAT_DTYPE),
+    )
+
+    adjusted_controls = replace(controls, elevator=adjusted_elevator)
+
+    return adjusted_controls, new_pid_state
 
 
 def waypoint_hit(
