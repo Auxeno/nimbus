@@ -1,5 +1,6 @@
 *.ipynb
 *pycache*
+*.pytest_cache*
 .DS_Store
 models/*
 !/notebooks/*.ipynb
