@@ -140,6 +140,7 @@ nimbus/
 2. **Vectorisation**: Native support for batched operations via `jax.vmap`
 3. **Differentiability**: Fully differentiable dynamics for gradient-based optimisation
 4. **JIT Compilation**: Automatic XLA compilation for maximum performance
+5. **Frames of Reference**: Standard aerospace/simulation reference frames: North East Down world-frame (flat earth) and Forward Right Down body-frame.
 
 ## Benchmarks
 
