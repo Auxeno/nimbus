@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_backend"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 [project]
 name = "nimbus"
@@ -46,10 +46,8 @@ Homepage = "https://github.com/auxeno/nimbus"
 Repository = "https://github.com/auxeno/nimbus"
 Issues = "https://github.com/auxeno/nimbus/issues"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["nimbus*"]
-exclude = ["tests*", "videos*", "notebooks*"]
+[tool.pdm]
+distribution = true
 
 [tool.ruff]
 line-length = 100
