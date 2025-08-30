@@ -55,7 +55,7 @@ Whether you're conducting aerodynamics research, exploring control algorithms, o
 # Basic installation
 pip install git+https://github.com/auxeno/nimbus.git
 
-# With visualisation support (includes Ursina, Pillow, Matplotlib)
+# With visualisation support (includes Ursina and Pillow)
 pip install "nimbus[viz] @ git+https://github.com/auxeno/nimbus.git"
 ```
 
