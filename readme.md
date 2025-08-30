@@ -91,7 +91,7 @@ aircraft_batch = jax.vmap(nimbus.step)...
 
 For a comprehensive demonstration of Nimbus capabilities, check out the demo notebook:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/auxeno/nimbus/blob/main/notebooks/nimbus_demo.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/auxeno/nimbus/blob/main/notebooks/nimbus-demo.ipynb)
 
 ### Ursina Visualisation Controls
 
