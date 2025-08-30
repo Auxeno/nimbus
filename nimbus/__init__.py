@@ -40,7 +40,6 @@ from nimbus.core.state import (
     Wind,
 )
 from nimbus.core.terrain import generate_heightmap
-from nimbus.visual.runtime import InteractiveDemo
 
 
 # Convenience functions
@@ -125,8 +124,6 @@ __all__ = [
     "PIDControllerState",
     # Terrain
     "generate_heightmap",
-    # Visualization
-    "InteractiveDemo",
     # Convenience functions
     "quick_scenario",
     "quick_terrain",
