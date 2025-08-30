@@ -1,5 +1,5 @@
 """
-Quaternion utilities for 3D orientation and rotation.
+Quaternion package for 3D orientation and rotation.
 
 Uses scalar-first format [w, x, y, z] with Hamilton product, right-handed
 rotations, and ZYX (yaw-pitch-roll) Euler angle conventions.

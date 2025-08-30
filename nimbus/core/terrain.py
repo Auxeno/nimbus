@@ -1,4 +1,5 @@
-"""Terrain generation module for procedural heightmaps.
+"""
+Terrain generation module for procedural heightmaps.
 
 Generate heightmaps using fractal noise for flight simulation environments.
 Terrain values represent normalized heights in range [0, 1], where higher
