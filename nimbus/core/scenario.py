@@ -112,7 +112,7 @@ class InitialConditions:
             wind_direction=Uniform(0.0, 360.0),
             waypoints=(
                 (Fixed(-2000.0), Fixed(869.0), Fixed(300.0)),
-                (Fixed(-774.0), Fixed(1715.0), Fixed(11.0)),
+                (Fixed(-774.0), Fixed(1715.0), Fixed(-30.0)),
                 (Fixed(1000.0), Fixed(1486.0), Fixed(79.0)),
                 (Fixed(1891.0), Fixed(479.0), Fixed(-93.0)),
             ),
