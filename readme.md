@@ -40,14 +40,14 @@ Whether you're conducting aerodynamics research, exploring control algorithms, o
 
 ## Features
 
-- ⚡ **Massive Parallelisation**: Simulate up to *20 million* aircraft on consumer hardware (RTX 4090)
+- ⚡ **Massive Parallelisation**: Simulate millions of aircraft simultaneously on modern GPUs
 - 🎮 **6DOF Flight Model**: Full six degrees of freedom rigid body dynamics
 - 🔄 **Quaternion Rotation Engine**: Singularity-free 3D rotations
 - 🎯 **RK4 Physics Integrator**: Fourth-order Runge-Kutta for high numerical accuracy
 - 🏔️ **Layered Simplex Noise Terrain**: Procedurally generated terrain with realistic features
-- 🌬️ **Atmospheric Modeling**: Simple exponential atmosphere model with stochastic wind gusts
+- 🌬️ **Atmospheric Modeling**: Exponential atmosphere model with stochastic wind gusts
 - 🛡️ **G-Limiter**: PID G-force limiting
-- 🐻 **3D Visualisation**: Real-time rendering with Ursina engine
+- 🎮 **3D Visualisation**: Real-time rendering with Ursina engine
 
 ## Installation
 
@@ -76,26 +76,44 @@ pip install --upgrade "jax[cuda12]"
 
 ```python
 import jax
-import nimbus
+from nimbus import quick_scenario, step, SimulationConfig
 
-# Create simulation configuration
-config = ...
+# Generate a complete scenario with terrain and waypoints
+simulation, heightmap, route = quick_scenario(seed=42)
 
-sim = ...
+# Single simulation step
+key = jax.random.PRNGKey(0)
+config = SimulationConfig()
+next_sim, next_route = step(key, simulation, heightmap, route, config)
 
-# Parallel simulation of multiple aircraft
-aircraft_batch = jax.vmap(nimbus.step)...
+# Parallel simulation of 1000 aircraft
+from nimbus import generate_simulation, InitialConditions
+
+keys = jax.random.split(key, 1000)
+simulations = jax.vmap(generate_simulation, in_axes=(0, None))(
+    keys, InitialConditions.default()
+)
+routes = jax.vmap(lambda _: route)(keys)  # Same route for all
+step_batch = jax.vmap(step, in_axes=(0, 0, None, 0, None))
+next_sims, next_routes = step_batch(keys, simulations, heightmap, routes, config)
 ```
 
 ## Demo
 
-For a comprehensive demonstration of Nimbus capabilities, check out the demo notebook:
+For a comprehensive demonstration of Nimbus capabilities, check out the interactive Jupyter notebook:
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/auxeno/nimbus/blob/main/notebooks/nimbus-demo.ipynb)
 
-### Ursina Visualisation Controls
+The notebook demonstrates:
+- Simulating 1 million aircraft in parallel
+- Extended temporal simulations
+- Interactive 3D scenario visualisation with Plotly
+- Custom scenario generation
+- Advanced terrain and aircraft configuration
 
-When running the 3D visualisation environment:
+### 3D Visualisation
+
+For real-time 3D visualisation with the Ursina engine (requires local installation):
 
 | Key | Action |
 |-----|--------|
@@ -142,16 +160,15 @@ nimbus/
 4. **JIT Compilation**: Automatic XLA compilation for maximum performance
 5. **Frames of Reference**: Standard aerospace/simulation reference frames: North East Down world-frame (flat earth) and Forward Right Down body-frame.
 
-## Benchmarks
+## Performance
 
-Performance on various hardware:
+Nimbus leverages JAX's JIT compilation and vectorisation for exceptional performance:
 
-| Hardware | Single Aircraft | Batch Size | Steps/Second |
-|----------|----------------|------------|--------------|
-| CPU (M2 Air) | 1 | 1,000 | ~100K |
-| RTX 4090 | 1 | 1,000,000 | ~10K |
+- **CPU**: Simulate thousands of aircraft in real-time on modern processors
+- **GPU**: Scale to millions of aircraft with CUDA-enabled GPUs
+- **TPU**: Compatible with Google Cloud TPU accelerators
 
-*Benchmark conditions: 6DOF dynamics, RK4 integration, terrain collision*
+The exact performance depends on simulation complexity, hardware, and batch size. JAX's JIT compilation provides significant speedups after the initial compilation step.
 
 ## Citation
 
