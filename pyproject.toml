@@ -1,30 +1,21 @@
+[project]
+name = "nimbus"
+version = "0.1.0"
+description = "A massively parallelisable JAX flight simulator."
+authors = [
+    {name = "Alex Goddard"},
+]
+dependencies = [
+    "jax==0.7.1",
+    "jaxtyping==0.3.2",
+]
+requires-python = ">=3.10"
+readme = "readme.md"
+license = {text = "Apache-2.0"}
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
-
-[project]
-name = "nimbus"
-version = "0.1.0"
-description = "JAX-based flight simulation framework implementing 6DOF aircraft dynamics with terrain collision detection"
-readme = "README.md"
-requires-python = ">=3.10"
-license = {text = "Apache-2.0"}
-authors = [
-    {name = "auxeno"},
-]
-
-dependencies = [
-    "jax>=0.7.0",
-    "jaxtyping>=0.3.0",
-]
-
-[project.optional-dependencies]
-viz = [
-    "numpy>=1.21.0",
-    "ursina>=8.0.0",
-    "pillow>=9.0.0",
-]
-
