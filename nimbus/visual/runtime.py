@@ -1,8 +1,12 @@
 """
-Ursina runtime module.
+Visual (Ursina) runtime module.
 """
 
+import jax
 from ursina import AmbientLight, DirectionalLight, Sky, Texture, Ursina, scene
+
+from nimbus.core.config import TerrainConfig
+from nimbus.core.scenario import InitialConditions, generate_scenario
 
 from ..core.config import SimulationConfig
 from ..core.primitives import Matrix
@@ -17,16 +21,20 @@ from .entities import (
 )
 from .utils import generate_gradient_image, hex_to_rgba
 
+# Default demo parameters
+default_simulation, default_heightmap, default_route = generate_scenario(
+    jax.random.PRNGKey(4), InitialConditions.showcase(), TerrainConfig()
+)
 default_simulation_config = SimulationConfig()
 default_ursina_config = UrsinaConfig()
 
 
-class UrsinaRuntime:
+class InteractiveDemo:
     def __init__(
         self,
-        simulation: Simulation,
-        heightmap: Matrix,
-        route: Route,
+        simulation: Simulation = default_simulation,
+        heightmap: Matrix = default_heightmap,
+        route: Route = default_route,
         simulation_config: SimulationConfig = default_simulation_config,
         ursina_config: UrsinaConfig = default_ursina_config,
     ) -> None:
