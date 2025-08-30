@@ -47,7 +47,7 @@ from nimbus.visual.runtime import InteractiveDemo
 def quick_scenario(seed: int = 42) -> tuple[Simulation, Matrix, Route]:
     """Generate a default scenario without managing PRNG keys."""
     key = jax.random.PRNGKey(seed)
-    return generate_scenario(key, InitialConditions.default(), TerrainConfig())
+    return generate_scenario(key, InitialConditions.showcase(), TerrainConfig())
 
 
 def quick_terrain(seed: int = 42, style: str = "default") -> Matrix:
