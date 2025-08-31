@@ -170,18 +170,6 @@ The code used for benchmarking can be found at the end of the demo notebook.
 
 *Max Throughput: Peak aircraft-steps per second | Sim Time Ratio: Simulated seconds per wall-clock second*
 
-### Performance Metrics
-
-The benchmarks measure:
-- **Throughput**: Aircraft-steps per second
-- **Scaling Efficiency**: Performance vs. batch size
-- **Memory Usage**: Peak memory consumption
-- **JIT Compilation**: Initial vs. steady-state performance
-
-*Full benchmark results with interactive plots will be added upon completion of testing.*
-
-
-
 ## Citation
 
 If you use Nimbus in your research, please cite:
