@@ -178,7 +178,7 @@ nimbus/
 ## Benchmarks
 
 <div align="center">
-  <img src="media/benchmark-results.jpg" alt="Nimbus benchmark results" width="80%" />
+  <img src="media/benchmark-results.jpg" alt="Nimbus benchmark results" width="95%" />
 </div>
 
 ### Benchmark Methodology
