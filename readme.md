@@ -39,11 +39,11 @@ Nimbus is a differentiable flight simulator written in JAX. It supports full 6DO
 
 ## Features
 
-- ⚡ **Massive Parallelisation**: Simulate millions of aircraft simultaneously on modern GPUs
+- ⚡ **Massive Parallelisation**: Simulate millions of aircraft simultaneously on consumer hardware
 - 🎮 **6DOF Flight Model**: Full six degrees of freedom rigid body dynamics
 - 🔄 **Quaternion Rotation Engine**: Singularity-free 3D rotations
 - 🎯 **RK4 Physics Integrator**: Fourth-order Runge-Kutta for high numerical accuracy
-- 🏔️ **Layered Simplex Noise Terrain**: Procedurally generated terrain with realistic features
+- 🏔️ **Layered Simplex Noise Terrain**: Procedurally generated terrain
 - 🌬️ **Atmospheric Modeling**: Exponential atmosphere model with stochastic wind gusts
 - 🛡️ **G-Limiter**: PID G-force limiting
 - 🎮 **3D Visualisation**: Real-time rendering with Ursina engine
