@@ -87,7 +87,8 @@ simulation, heightmap, waypoint_route = quick_scenario(seed=42)
 # Configure and execute a single simulation step
 key = jax.random.PRNGKey(0)
 config = SimulationConfig()
-next_sim, next_route = step(key, simulation, heightmap, waypoint_route, config)
+step_fn = jax.jit(step, static_argnames=("config",))
+next_sim, next_route = step_fn(key, simulation, heightmap, waypoint_route, config)
 ```
 
 ### Massive Parallel Simulation
