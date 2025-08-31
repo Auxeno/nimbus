@@ -53,10 +53,10 @@ Whether you're conducting aerodynamics research, exploring control algorithms, o
 
 ```bash
 # Basic installation
-pip install git+https://github.com/auxeno/nimbus.git
+pip install git+https://github.com/auxeno/nimbus
 
 # With visualisation support (includes Ursina and Pillow)
-pip install "nimbus[viz] @ git+https://github.com/auxeno/nimbus.git"
+pip install "nimbus[viz] @ git+https://github.com/auxeno/nimbus"
 ```
 
 For local development:
@@ -93,14 +93,14 @@ keys = jax.random.split(key, 1000)
 simulations = jax.vmap(generate_simulation, in_axes=(0, None))(
     keys, InitialConditions.default()
 )
-routes = jax.vmap(lambda _: route)(keys)  # Same route for all
+routes = jax.vmap(lambda _: route)(keys)  # same route for all
 step_batch = jax.vmap(step, in_axes=(0, 0, None, 0, None))
 next_sims, next_routes = step_batch(keys, simulations, heightmap, routes, config)
 ```
 
 ## Demo
 
-For a comprehensive demonstration of Nimbus capabilities, check out the interactive Jupyter notebook:
+For a demonstration of Nimbus capabilities, check out the Nimbus demo notebook:
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/auxeno/nimbus/blob/main/notebooks/nimbus-demo.ipynb)
 
@@ -109,7 +109,7 @@ The notebook demonstrates:
 - Extended temporal simulations
 - Interactive 3D scenario visualisation with Plotly
 - Custom scenario generation
-- Advanced terrain and aircraft configuration
+- Terrain and aircraft configuration
 
 ### 3D Visualisation
 
@@ -124,7 +124,7 @@ For real-time 3D visualisation with the Ursina engine (requires local installati
 | **Q** | Roll left |
 | **E** | Roll right |
 | **P** | Pause/unpause simulation |
-| **Scroll** | Zoom in/out |
+| **Scroll** | Zoom camera in/out |
 
 ## Architecture
 
@@ -152,23 +152,35 @@ nimbus/
     └── utils.py        # visualisation utilities
 ```
 
-### Key Design Principles
+## Benchmarks
 
-1. **Pure Functions**: All physics computations are pure JAX functions
-2. **Vectorisation**: Native support for batched operations via `jax.vmap`
-3. **Differentiability**: Fully differentiable dynamics for gradient-based optimisation
-4. **JIT Compilation**: Automatic XLA compilation for maximum performance
-5. **Frames of Reference**: Standard aerospace/simulation reference frames: North East Down world-frame (flat earth) and Forward Right Down body-frame.
+*Performance plots coming soon - benchmarking in progress on M2 Air CPU, Colab T4 GPU, and RTX 4090*
 
-## Performance
+### Benchmark Methodology
 
-Nimbus leverages JAX's JIT compilation and vectorisation for exceptional performance:
+The code used for benchmarking can be found at the end of the demo notebook.
 
-- **CPU**: Simulate thousands of aircraft in real-time on modern processors
-- **GPU**: Scale to millions of aircraft with CUDA-enabled GPUs
-- **TPU**: Compatible with Google Cloud TPU accelerators
+### Hardware Configurations (in progress)
 
-The exact performance depends on simulation complexity, hardware, and batch size. JAX's JIT compilation provides significant speedups after the initial compilation step.
+| Hardware | Type | Memory | Max Throughput | Sim Time Ratio |
+|----------|------|--------|----------------|----------------|
+| Apple M2 Air | CPU | 16 GB | TBD | TBD |
+| Google Colab T4 | GPU | 16 GB VRAM | TBD | TBD |
+| NVIDIA RTX 4090 | GPU | 24 GB VRAM | TBD | TBD |
+
+*Max Throughput: Peak aircraft-steps per second | Sim Time Ratio: Simulated seconds per wall-clock second*
+
+### Performance Metrics
+
+The benchmarks measure:
+- **Throughput**: Aircraft-steps per second
+- **Scaling Efficiency**: Performance vs. batch size
+- **Memory Usage**: Peak memory consumption
+- **JIT Compilation**: Initial vs. steady-state performance
+
+*Full benchmark results with interactive plots will be added upon completion of testing.*
+
+
 
 ## Citation
 
