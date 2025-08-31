@@ -8,6 +8,7 @@
   [![JAX](https://img.shields.io/badge/JAX-0.7.0+-AB63FA.svg)](https://github.com/google/jax)
   [![Ruff](https://img.shields.io/badge/linting-ruff-FECB52?logo=ruff)](https://github.com/astral-sh/ruff)
   [![License](https://img.shields.io/badge/License-Apache%202.0-FFA15A.svg)](https://opensource.org/licenses/Apache-2.0)
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/auxeno/nimbus/blob/main/notebooks/nimbus-demo.ipynb)
 
 </div>
 
