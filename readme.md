@@ -75,28 +75,50 @@ pip install --upgrade "jax[cuda12]"
 
 ## Quick Start
 
+### Single Aircraft Simulation
+
 ```python
 import jax
 from nimbus import quick_scenario, step, SimulationConfig
 
 # Generate a complete scenario with terrain and waypoints
-simulation, heightmap, route = quick_scenario(seed=42)
+simulation, heightmap, waypoint_route = quick_scenario(seed=42)
 
-# Single simulation step
+# Configure and execute a single simulation step
 key = jax.random.PRNGKey(0)
 config = SimulationConfig()
-next_sim, next_route = step(key, simulation, heightmap, route, config)
+next_sim, next_route = step(key, simulation, heightmap, waypoint_route, config)
+```
 
-# Parallel simulation of 1000 aircraft
-from nimbus import generate_simulation, InitialConditions
+### Massive Parallel Simulation
 
-keys = jax.random.split(key, 1000)
-simulations = jax.vmap(generate_simulation, in_axes=(0, None))(
-    keys, InitialConditions.default()
+```python
+import jax
+from nimbus import (
+    InitialConditions, SimulationConfig, generate_simulation, quick_scenario, step
 )
-routes = jax.vmap(lambda _: route)(keys)  # same route for all
-step_batch = jax.vmap(step, in_axes=(0, 0, None, 0, None))
-next_sims, next_routes = step_batch(keys, simulations, heightmap, routes, config)
+
+# Set up shared terrain and waypoint route
+_, heightmap, waypoint_route = quick_scenario(seed=0)
+
+# Generate 1 million unique aircraft simulation states
+num_aircraft = 1_000_000
+key = jax.random.PRNGKey(0)
+keys = jax.random.split(key, num=num_aircraft)
+simulation_states = jax.vmap(generate_simulation, in_axes=(0, None))(
+    keys, 
+    InitialConditions.default()
+)
+
+# Compile and vectorise the step function
+config = SimulationConfig()
+step_fn = jax.jit(step, static_argnames=("config",))
+step_parallel = jax.vmap(step_fn, in_axes=(None, 0, None, None, None))
+
+# Execute one simulation step for all aircraft
+stepped_states = step_parallel(
+    key, simulation_states, heightmap, waypoint_route, config
+)
 ```
 
 ## Demo
@@ -111,6 +133,7 @@ The notebook demonstrates:
 - Interactive 3D scenario visualisation with Plotly
 - Custom scenario generation
 - Terrain and aircraft configuration
+- Benchmarking
 
 ### 3D Visualisation
 
