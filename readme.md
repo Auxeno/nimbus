@@ -21,7 +21,7 @@
       <a href="#installation">Installation</a> |
       <a href="#quick-start">Quick Start</a> |
       <a href="#demo">Demo</a> |
-      <a href="#architecture">Architecture</a>
+      <a href="#project-structure">Project Structure</a>
     </h3>
 </div>
 
@@ -127,9 +127,7 @@ For real-time 3D visualisation with the Ursina engine (requires local installati
 | **P** | Pause/unpause simulation |
 | **Scroll** | Zoom camera in/out |
 
-## Architecture
-
-### Project Structure
+## Project Structure
 
 ```
 nimbus/
@@ -155,19 +153,22 @@ nimbus/
 
 ## Benchmarks
 
-*Performance plots coming soon - benchmarking in progress on M2 Air CPU, Colab T4 GPU, and RTX 4090*
+<div align="center">
+  <img src="videos/benchmark-results.jpg" alt="Nimbus benchmark results" width="80%" />
+</div>
 
 ### Benchmark Methodology
 
-The code used for benchmarking can be found at the end of the demo notebook.
+The code used for benchmarking can be found at the end of the demo notebook for easy results replication. Each data point is the average of 10 runs.
 
-### Hardware Configurations (in progress)
+### Hardware Configurations
 
 | Hardware | Type | Memory | Max Throughput | Sim Time Ratio |
 |----------|------|--------|----------------|----------------|
-| Apple M2 Air | CPU | 16 GB | TBD | TBD |
-| Google Colab T4 | GPU | 16 GB VRAM | TBD | TBD |
-| NVIDIA RTX 4090 | GPU | 24 GB VRAM | TBD | TBD |
+| Apple M2 Air @ 3.5GHz | CPU | 16 GB | 9.2M steps/second | 1.8 days/second |
+| i7 14770k @ 5.6GHz | CPU | 64 GB | 10.0M steps/second | 1.9 days/second |
+| Google Colab T4 | GPU | 16 GB VRAM | 112M steps/second | 22 days/second |
+| NVIDIA RTX 4090 | GPU | 24 GB VRAM | 983M steps/second | 190 days/second |
 
 *Max Throughput: Peak aircraft-steps per second | Sim Time Ratio: Simulated seconds per wall-clock second*
 
