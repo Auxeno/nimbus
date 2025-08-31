@@ -155,6 +155,7 @@ demo.run()
 | **D** | Yaw right |
 | **Q** | Roll left |
 | **E** | Roll right |
+| **1-5** | Set throttle position (0%, 25%, 50%, 75%, 100%) |
 | **P** | Pause/unpause simulation |
 | **Scroll** | Zoom camera in/out |
 

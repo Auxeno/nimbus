@@ -115,7 +115,7 @@ class AircraftConfig:
     surface_areas: tuple[float, float, float] = (10.0, 20.0, 30.0)
     """Reference front, side, and wing surface areas [m^2]."""
 
-    max_thrust: float = 200_000.0
+    max_thrust: float = 150_000.0
     """Maximum available engine thrust [N]."""
 
     max_attack_angle: float = 18.0
