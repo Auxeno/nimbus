@@ -34,9 +34,9 @@ Nimbus is a high-performance flight simulation framework built on JAX, designed 
 Whether you're conducting aerodynamics research, exploring control algorithms, or studying flight dynamics, Nimbus provides a fast, scalable, and fully differentiable simulation environment.
 
 <div align="center">
-  <img src="videos/clip_1.gif" alt="Nimbus demo clip 1" width="32%" />
-  <img src="videos/clip_2.gif" alt="Nimbus demo clip 2" width="32%" />
-  <img src="videos/clip_4.gif" alt="Nimbus demo clip 4" width="32%" />
+  <img src="media/clip_1.gif" alt="Nimbus demo clip 1" width="32%" />
+  <img src="media/clip_2.gif" alt="Nimbus demo clip 2" width="32%" />
+  <img src="media/clip_4.gif" alt="Nimbus demo clip 4" width="32%" />
 </div>
 
 ## Features
@@ -154,7 +154,7 @@ nimbus/
 ## Benchmarks
 
 <div align="center">
-  <img src="videos/benchmark-results.jpg" alt="Nimbus benchmark results" width="80%" />
+  <img src="media/benchmark-results.jpg" alt="Nimbus benchmark results" width="80%" />
 </div>
 
 ### Benchmark Methodology
