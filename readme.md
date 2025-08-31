@@ -177,10 +177,10 @@ The code used for benchmarking can be found at the end of the demo notebook for 
 If you use Nimbus in your research, please cite:
 
 ```bibtex
-@software{nimbus2024,
+@software{nimbus2025,
   title = {Nimbus: A Massively Parallelisable JAX Flight Simulation},
   author = {Alex Goddard},
-  year = {2024},
+  year = {2025},
   url = {https://github.com/auxeno/nimbus}
 }
 ```
