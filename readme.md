@@ -29,9 +29,7 @@
 
 ## Overview
 
-Nimbus is a high-performance flight simulation framework built on JAX, designed for massive parallelisation and differentiability. Leveraging JAX's JIT compilation and automatic differentiation, Nimbus enables researchers and engineers to simulate millions of aircraft simultaneously on modern hardware accelerators.
-
-Whether you're conducting aerodynamics research, exploring control algorithms, or studying flight dynamics, Nimbus provides a fast, scalable, and fully differentiable simulation environment.
+Nimbus is a differentiable flight simulator written in JAX. It supports full 6DOF dynamics and vectorised execution on hardware accelerators for research and education in aerodynamics and control.
 
 <div align="center">
   <img src="media/clip_1.gif" alt="Nimbus demo clip 1" width="32%" />
@@ -56,7 +54,7 @@ Whether you're conducting aerodynamics research, exploring control algorithms, o
 # Basic installation
 pip install git+https://github.com/auxeno/nimbus
 
-# With visualisation support (includes Ursina and Pillow)
+# With interactive demo support (includes Ursina and Pillow)
 pip install "nimbus[viz] @ git+https://github.com/auxeno/nimbus"
 ```
 
@@ -138,7 +136,16 @@ The notebook demonstrates:
 
 ### 3D Visualisation
 
-For real-time 3D visualisation with the Ursina engine (requires local installation):
+### Run the Interactive Demo
+
+*requires local installation with the optional [viz] command..*
+
+```python
+from nimbus.visual import InteractiveDemo
+
+demo = InteractiveDemo()
+demo.run()
+```
 
 | Key | Action |
 |-----|--------|
