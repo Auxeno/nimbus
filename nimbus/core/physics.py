@@ -35,8 +35,8 @@ def calculate_air_density(
 
     Notes
     -----
-    rho_0 = 1.225 and rho_decay = 5500.0 are rough true approximations
-    under ISA conditions.
+    - rho_0 = 1.225 and rho_decay = 5500.0 are rough true approximations under ISA
+    conditions.
     """
     decay_rate = jnp.log(2.0) / rho_decay
     air_density = rho_0 * jnp.exp(-decay_rate * altitude)
@@ -228,7 +228,7 @@ def calculate_lift(
     """
     max_angle_rad = jnp.deg2rad(max_angle_deg)
     zero_lift_angle_rad = 2 * max_angle_rad
-    abs_alpha = abs(alpha)
+    abs_alpha = jnp.abs(alpha)
 
     # Linear falloff region between max_angle and 2*max_angle
     falloff = (zero_lift_angle_rad - abs_alpha) / jnp.maximum(
@@ -351,6 +351,84 @@ def calculate_drag(
         drag,
         lambda: jnp.array([0.0, 0.0, 0.0], dtype=FLOAT_DTYPE),
     )
+
+
+def calculate_aero_axes(
+    velocity: Vector3,
+    orientation: Quaternion,
+) -> tuple[Vector3, Vector3, Vector3]:
+    """
+    Build aerodynamic unit axes in the FRD body-frame from relative air velocity.
+
+    Parameters
+    ----------
+    velocity: Vector3
+        Aircraft velocity relative to the airmass in NED world-frame [m/s].
+    orientation: Quaternion
+        Body-to-world orientation quaternion.
+
+    Returns
+    -------
+    drag_axis: Vector3
+        Unit vector in body-frame pointing along +drag (opposes the relative wind).
+    side_axis: Vector3
+        Unit vector in body-frame pointing laterally (positive right).
+    lift_axis: Vector3
+        Unit vector in body-frame perpendicular to the airflow (positive up).
+
+    Notes
+    -----
+    - Axes are returned in FRD convention (+x forward, +y right, +z down).
+    - The airflow direction defines +drag. The plane orthogonal to +drag contains
+      the lift/side directions.
+    - To choose a stable in-plane orientation, we form two cues:
+        (1) BODY RIGHT projected into the airflow-orthogonal plane (span-first),
+        (2) BODY DOWN projected into the plane, then SIDE = LIFT x DRAG (up-first).
+      We compute weights with a temperature-scaled softmax over the **squared**
+      projection magnitudes (power p=2, temperature T=0.05), then blend the two
+      candidates. This yields a smooth result that strongly prefers the
+      better-conditioned cue and avoids jitter near tie cases.
+    - Candidate directions are sign-stabilised toward +body_right / +body_down to
+      prevent 180 degree flips under small numerical changes.
+    """
+    # Drag axis opposes airflow
+    velocity_body = quaternion.rotate_vector(velocity, quaternion.inverse(orientation))
+    airspeed = jnp.maximum(norm_3(velocity_body), EPS)
+    drag_axis = -velocity_body / airspeed
+
+    # Body-frame basis vectors
+    body_right = jnp.array([0.0, 1.0, 0.0], dtype=FLOAT_DTYPE)
+    body_down = jnp.array([0.0, 0.0, 1.0], dtype=FLOAT_DTYPE)
+
+    # Project both basis vectors into the plane orthogonal to airflow
+    right_proj = body_right - jnp.dot(body_right, drag_axis) * drag_axis
+    down_proj = body_down - jnp.dot(body_down, drag_axis) * drag_axis
+    right_proj_mag = norm_3(right_proj)
+    down_proj_mag = norm_3(down_proj)
+
+    # Candidate 1: side axis computed with body-right basis vector
+    side_1 = right_proj / jnp.maximum(norm_3(right_proj), EPS)
+    side_1 = jnp.where(jnp.dot(side_1, body_right) < 0.0, -side_1, side_1)
+
+    # Candidate 2: side axis computed with body-down basis vector
+    lift_2 = down_proj / jnp.maximum(norm_3(down_proj), EPS)
+    lift_2 = jnp.where(jnp.dot(lift_2, body_down) < 0.0, -lift_2, lift_2)
+    side_2 = jnp.cross(lift_2, drag_axis)
+    side_2 = side_2 / jnp.maximum(norm_3(side_2), EPS)
+
+    # Use quadratic softmax logits with low temperature for saturated blending
+    logits = jnp.stack([down_proj_mag**2, right_proj_mag**2]) / 0.05
+    w_down, w_right = jax.nn.softmax(logits)
+
+    # Build side-axis vector using blend between the two candidates
+    side_axis = w_right * side_1 + w_down * side_2
+    side_axis = side_axis / jnp.maximum(norm_3(side_axis), EPS)
+
+    # Compute lift axis with normalised cross product for orthogonality
+    lift_axis = jnp.cross(drag_axis, side_axis)
+    lift_axis = lift_axis / jnp.maximum(norm_3(lift_axis), EPS)
+
+    return drag_axis, side_axis, lift_axis
 
 
 def calculate_aero_forces(
