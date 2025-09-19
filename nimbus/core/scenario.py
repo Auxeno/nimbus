@@ -40,7 +40,9 @@ def _sample_scalar(key: PRNGKey, spec: ScalarSpec) -> FloatScalar:
     if isinstance(spec, Fixed):
         return jnp.array(spec.x, dtype=FLOAT_DTYPE)
     elif isinstance(spec, Uniform):
-        return jax.random.uniform(key, (), minval=spec.low, maxval=spec.high, dtype=FLOAT_DTYPE)
+        return jax.random.uniform(
+            key, (), minval=spec.low, maxval=spec.high, dtype=FLOAT_DTYPE
+        )
     else:
         raise TypeError(f"Unknown ScalarSpec: {type(spec)}")
 
@@ -165,7 +167,9 @@ def generate_simulation(
     angular_velocity = _sample_vec3(key_omega, initial_conditions.angular_velocity)
 
     wind_speed = _sample_scalar(key_wind_speed, initial_conditions.wind_speed)
-    wind_dir = jnp.deg2rad(_sample_scalar(key_wind_dir, initial_conditions.wind_direction))
+    wind_dir = jnp.deg2rad(
+        _sample_scalar(key_wind_dir, initial_conditions.wind_direction)
+    )
     wind_north = wind_speed * jnp.cos(wind_dir + jnp.pi)
     wind_east = wind_speed * jnp.sin(wind_dir + jnp.pi)
     mean_wind = jnp.array([wind_north, wind_east, 0.0], dtype=FLOAT_DTYPE)

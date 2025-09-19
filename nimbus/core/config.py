@@ -127,7 +127,7 @@ class AircraftConfig:
     coef_drag: float = 0.2
     """Baseline drag coefficient."""
 
-    coef_lift: float = 10.0
+    coef_lift: float = 15.0
     """Lift curve slope coefficient."""
 
     coef_sideslip: float = 5.0
@@ -168,7 +168,7 @@ class RouteConfig:
 class WindConfig:
     """Configuration for wind gust generation."""
 
-    gust_intensity: float = 5.0
+    gust_intensity: float = 2.0
     """RMS intensity of wind gusts [m/s]."""
 
     gust_duration: float = 5.0

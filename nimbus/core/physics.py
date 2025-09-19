@@ -204,38 +204,37 @@ def calculate_lift(
     coef_lift: FloatScalar,
     wing_area: FloatScalar,
     max_angle_deg: FloatScalar,
-) -> Vector3:
+) -> FloatScalar:
     """
-    Calculate aerodynamic lift force in FRD body-frame.
+    Scalar lift (signed by alpha), no direction.
+    Positive value corresponds to +lift_axis (up) in FRD.
 
     Parameters
     ----------
-    alpha: FloatScalar
-        Angle of attack [radians].
-    dynamic_pressure: FloatScalar
-        Aerodynamic pressure applied to wings [N/m^2].
-    coef_lift: FloatScalar
-        Coefficient scaling effectiveness of lift.
-    wing_area: FloatScalar
-        Wing surface area [m^2].
-    max_angle_deg: FloatScalar
-        Angle of attack that generates maximum lift [degrees].
+    alpha : FloatScalar
+        Angle of attack [rad].
+    dynamic_pressure : FloatScalar
+        Aerodynamic pressure [N/m^2].
+    coef_lift : FloatScalar
+        Lift effectiveness coefficient.
+    wing_area : FloatScalar
+        Wing planform area [m^2].
+    max_angle_deg : FloatScalar
+        AoA that yields maximum lift [deg].
 
     Returns
     -------
-    lift: Vector3
-        Lift force vector in FRD body-frame [N].
+    lift : FloatScalar
+        Signed lift magnitude [N], to be applied along +lift_axis.
     """
     max_angle_rad = jnp.deg2rad(max_angle_deg)
     zero_lift_angle_rad = 2 * max_angle_rad
     abs_alpha = jnp.abs(alpha)
 
-    # Linear falloff region between max_angle and 2*max_angle
     falloff = (zero_lift_angle_rad - abs_alpha) / jnp.maximum(
         zero_lift_angle_rad - max_angle_rad, EPS
     )
 
-    # Piecewise alpha gain: linear up to max_angle_rad, falloff to zero by 2*max_angle
     alpha_gain = jnp.where(
         abs_alpha <= max_angle_rad,
         coef_lift * alpha,
@@ -243,9 +242,8 @@ def calculate_lift(
     )
     alpha_gain = jnp.where(abs_alpha > zero_lift_angle_rad, 0.0, alpha_gain)
 
-    lift_mag = dynamic_pressure * alpha_gain * wing_area
-    lift_dir = jnp.array([-jnp.sin(alpha), 0.0, -jnp.cos(alpha)], dtype=FLOAT_DTYPE)
-    lift = lift_mag * lift_dir
+    lift = dynamic_pressure * alpha_gain * wing_area
+
     return lift
 
 
@@ -255,38 +253,37 @@ def calculate_sideslip(
     coef_sideslip: FloatScalar,
     side_area: FloatScalar,
     max_angle_deg: FloatScalar,
-) -> Vector3:
+) -> FloatScalar:
     """
-    Calculate lateral aerodynamic force from sideslip in FRD body-frame.
+    Scalar lateral force from sideslip (signed), no direction.
+    Positive return value is along +side_axis (right) in FRD.
 
     Parameters
     ----------
-    beta: FloatScalar
-        Angle of sideslip [radians].
-    dynamic_pressure: FloatScalar
-        Aerodynamic pressure applied to body [N/m^2].
-    coef_sideslip: FloatScalar
-        Coefficient scaling effectiveness of sideslip.
-    side_area: FloatScalar
-        Side surface area exposed to lateral airflow [m^2].
-    max_angle_deg: FloatScalar
-        Angle of sideslip that generates maximum lateral force [degrees].
+    beta : FloatScalar
+        Sideslip angle [rad].
+    dynamic_pressure : FloatScalar
+        Aerodynamic pressure [N/m^2].
+    coef_sideslip : FloatScalar
+        Sideslip effectiveness coefficient.
+    side_area : FloatScalar
+        Effective lateral area [m^2].
+    max_angle_deg : FloatScalar
+        Beta that yields maximum lateral force [deg].
 
     Returns
     -------
-    sideslip: Vector3
-        Sideslip force vector in FRD body-frame [N].
+    sideslip : FloatScalar
+        Signed sideslip force [N], to be applied along +side_axis.
     """
     max_angle_rad = jnp.deg2rad(max_angle_deg)
     zero_sideslip_angle_rad = 2.0 * max_angle_rad
     abs_beta = jnp.abs(beta)
 
-    # Linear falloff region between max_angle and 2*max_angle
     falloff = (zero_sideslip_angle_rad - abs_beta) / jnp.maximum(
         zero_sideslip_angle_rad - max_angle_rad, EPS
     )
 
-    # Piecewise beta gain: linear up to max_angle, falloff to zero by 2*max_angle
     beta_gain = jnp.where(
         abs_beta <= max_angle_rad,
         coef_sideslip * beta,
@@ -294,9 +291,9 @@ def calculate_sideslip(
     )
     beta_gain = jnp.where(abs_beta > zero_sideslip_angle_rad, 0.0, beta_gain)
 
-    # Sideslip force (positive left, negative right in FRD convention)
     sideslip = -dynamic_pressure * beta_gain * side_area
-    return jnp.array([0.0, sideslip, 0.0], dtype=FLOAT_DTYPE)
+
+    return sideslip
 
 
 def calculate_drag(
@@ -306,51 +303,41 @@ def calculate_drag(
     dynamic_pressure: FloatScalar,
     coef_drag: FloatScalar,
     surface_areas: Vector3,
-) -> Vector3:
+) -> FloatScalar:
     """
-    Calculate 3D form drag force in FRD body-frame.
+    Scalar form-drag magnitude (non-negative), no direction.
+
+    Uses the same projected-area cuboid model as the previous vector version.
+    The returned scalar should be applied along +drag_axis (opposes relative wind).
 
     Parameters
     ----------
-    velocity: Vector3
-        Relative velocity in NED world-frame [m/s].
-    orientation: Quaternion
-        Body to world orientation quaternion.
-    airspeed: FloatScalar
-        True airspeed (magnitude of relative velocity) [m/s].
-    dynamic_pressure: FloatScalar
-        Aerodynamic pressure on body [N/m^2].
-    coef_drag: FloatScalar
-        Drag coefficient scaling the magnitude of aerodynamic drag.
-    surface_areas: Vector3
-        Surface areas of front, side and top areas of body [m^2].
+    velocity : Vector3
+        Relative air velocity in NED [m/s].
+    orientation : Quaternion
+        Body->world orientation quaternion.
+    airspeed : FloatScalar
+        |velocity| [m/s].
+    dynamic_pressure : FloatScalar
+        Aerodynamic pressure [N/m^2].
+    coef_drag : FloatScalar
+        Drag coefficient.
+    surface_areas : Vector3
+        Front, side, top areas [m^2].
 
     Returns
     -------
-    drag_body: Vector3
-        Form drag force vector in FRD body-frame [N].
+    drag : FloatScalar
+        Non-negative drag magnitude [N], to be applied along +drag_axis.
     """
+    velocity_body = quaternion.rotate_vector(velocity, quaternion.inverse(orientation))
+    velocity_dir_body = velocity_body / jnp.maximum(airspeed, EPS)
 
-    def drag() -> Vector3:
-        # Rotate body into body frame and normalise
-        velocity_body = quaternion.rotate_vector(
-            velocity, quaternion.inverse(orientation)
-        )
-        velocity_dir_body = velocity_body / airspeed
+    # Projected area of a cuboid against the flow direction
+    projected_area = jnp.dot(surface_areas, jnp.abs(velocity_dir_body))
+    drag = coef_drag * dynamic_pressure * projected_area
 
-        # Projected areas of cuboid surfaces, front, side and top
-        projected_area = jnp.dot(surface_areas, jnp.abs(velocity_dir_body))
-
-        # Calculate drag in body frame
-        drag_mag = coef_drag * dynamic_pressure * projected_area
-        drag_body = -drag_mag * velocity_dir_body
-        return drag_body
-
-    return jax.lax.cond(
-        airspeed > EPS,
-        drag,
-        lambda: jnp.array([0.0, 0.0, 0.0], dtype=FLOAT_DTYPE),
-    )
+    return drag
 
 
 def calculate_aero_axes(
@@ -362,71 +349,82 @@ def calculate_aero_axes(
 
     Parameters
     ----------
-    velocity: Vector3
+    velocity : Vector3
         Aircraft velocity relative to the airmass in NED world-frame [m/s].
-    orientation: Quaternion
+    orientation : Quaternion
         Body-to-world orientation quaternion.
 
     Returns
     -------
-    drag_axis: Vector3
-        Unit vector in body-frame pointing along +drag (opposes the relative wind).
-    side_axis: Vector3
-        Unit vector in body-frame pointing laterally (positive right).
-    lift_axis: Vector3
-        Unit vector in body-frame perpendicular to the airflow (positive up).
+    drag_axis : Vector3
+        Unit vector in FRD body-frame pointing along +drag (opposes the relative wind).
+    side_axis : Vector3
+        Unit vector in FRD body-frame pointing laterally (positive right).
+    lift_axis : Vector3
+        Unit vector in FRD body-frame perpendicular to the airflow (positive up).
 
     Notes
     -----
     - Axes are returned in FRD convention (+x forward, +y right, +z down).
-    - The airflow direction defines +drag. The plane orthogonal to +drag contains
-      the lift/side directions.
-    - To choose a stable in-plane orientation, we form two cues:
-        (1) BODY RIGHT projected into the airflow-orthogonal plane (span-first),
-        (2) BODY DOWN projected into the plane, then SIDE = LIFT x DRAG (up-first).
-      We compute weights with a temperature-scaled softmax over the **squared**
-      projection magnitudes (power p=2, temperature T=0.05), then blend the two
-      candidates. This yields a smooth result that strongly prefers the
-      better-conditioned cue and avoids jitter near tie cases.
-    - Candidate directions are sign-stabilised toward +body_right / +body_down to
-      prevent 180 degree flips under small numerical changes.
+    - +drag is defined to oppose the airflow. The plane orthogonal to +drag
+      spans the side/lift directions.
+    - To fix the in-plane rotation about +drag in a smooth, roll-agnostic way,
+      we construct the **minimal rotation** that maps body forward to the airflow
+      direction, then carry body right through that rotation to define +side.
+      Finally, +lift is formed with a normalized cross product to ensure an
+      orthonormal, right-handed basis.
     """
-    # Drag axis opposes airflow
+
+    # Velocity in body-frame and corresponding +drag direction
     velocity_body = quaternion.rotate_vector(velocity, quaternion.inverse(orientation))
     airspeed = jnp.maximum(norm_3(velocity_body), EPS)
-    drag_axis = -velocity_body / airspeed
+    drag_axis = -velocity_body / airspeed  # +drag opposes relative wind in FRD
 
-    # Body-frame basis vectors
+    # Body-frame basis vectors (FRD: +x forward, +y right, +z down)
+    body_forward = jnp.array([1.0, 0.0, 0.0], dtype=FLOAT_DTYPE)
     body_right = jnp.array([0.0, 1.0, 0.0], dtype=FLOAT_DTYPE)
     body_down = jnp.array([0.0, 0.0, 1.0], dtype=FLOAT_DTYPE)
 
-    # Project both basis vectors into the plane orthogonal to airflow
-    right_proj = body_right - jnp.dot(body_right, drag_axis) * drag_axis
-    down_proj = body_down - jnp.dot(body_down, drag_axis) * drag_axis
-    right_proj_mag = norm_3(right_proj)
-    down_proj_mag = norm_3(down_proj)
+    # Minimal-rotation quaternion that maps body_forward to target_forward
+    target_forward = -drag_axis
+    source_forward = body_forward
 
-    # Candidate 1: side axis computed with body-right basis vector
-    side_1 = right_proj / jnp.maximum(norm_3(right_proj), EPS)
-    side_1 = jnp.where(jnp.dot(side_1, body_right) < 0.0, -side_1, side_1)
+    # Two-vector quaternion (generic case)
+    q_vec = jnp.cross(source_forward, target_forward)
+    q_w = 1.0 + jnp.dot(source_forward, target_forward)
 
-    # Candidate 2: side axis computed with body-down basis vector
-    lift_2 = down_proj / jnp.maximum(norm_3(down_proj), EPS)
-    lift_2 = jnp.where(jnp.dot(lift_2, body_down) < 0.0, -lift_2, lift_2)
-    side_2 = jnp.cross(lift_2, drag_axis)
-    side_2 = side_2 / jnp.maximum(norm_3(side_2), EPS)
+    # Degenerate case: source_forward ≈ -target_forward (180 deg)
+    # Choose any axis orthogonal to source_forward, prefer body right
+    near_pi = q_w <= EPS
+    fallback_axis = jnp.where(
+        jnp.abs(jnp.dot(body_right, source_forward)) < 0.9, body_right, -body_down
+    )
+    q_w_alt = 0.0
+    q_vec_alt = fallback_axis
 
-    # Use quadratic softmax logits with low temperature for saturated blending
-    logits = jnp.stack([down_proj_mag**2, right_proj_mag**2]) / 0.05
-    w_down, w_right = jax.nn.softmax(logits)
+    # Select generic or fallback quaternion components
+    q_w = jnp.where(near_pi, q_w_alt, q_w)
+    q_vec = jnp.where(near_pi, q_vec_alt, q_vec)
 
-    # Build side-axis vector using blend between the two candidates
-    side_axis = w_right * side_1 + w_down * side_2
+    # Normalise quaternion [w, x, y, z]
+    q_norm = jnp.sqrt(q_w * q_w + jnp.dot(q_vec, q_vec))
+    q_w = q_w / jnp.maximum(q_norm, EPS)
+    q_vec = q_vec / jnp.maximum(q_norm, EPS)
+    q_minrot = jnp.concatenate([jnp.array([q_w], dtype=FLOAT_DTYPE), q_vec], axis=0)
+
+    # Carry body right through the minimal rotation to define +side
+    side_axis = quaternion.rotate_vector(body_right, q_minrot)
     side_axis = side_axis / jnp.maximum(norm_3(side_axis), EPS)
 
-    # Compute lift axis with normalised cross product for orthogonality
+    # Hemisphere stabilisation toward +body_right
+    side_axis = jnp.where(jnp.dot(side_axis, body_right) < 0.0, -side_axis, side_axis)
+
+    # +lift from cross product ensures orthogonality and right-handedness
     lift_axis = jnp.cross(drag_axis, side_axis)
     lift_axis = lift_axis / jnp.maximum(norm_3(lift_axis), EPS)
+
+    # Point +lift up in FRD (opposite body down)
+    lift_axis = jnp.where(jnp.dot(lift_axis, -body_down) < 0.0, -lift_axis, lift_axis)
 
     return drag_axis, side_axis, lift_axis
 
@@ -471,18 +469,30 @@ def calculate_aero_forces(
     force_body: Vector3
         Resultant aerodynamic force (lift + drag + sideslip) in FRD body-frame [N].
     """
-
     airspeed = norm_3(velocity)
-    q = calculate_dynamic_pressure(airspeed, air_density)
-    alpha = calculate_angle_of_attack(velocity, orientation)
-    beta = calculate_angle_of_sideslip(velocity, orientation)
 
-    drag = calculate_drag(velocity, orientation, airspeed, q, coef_drag, surface_areas)
-    lift = calculate_lift(alpha, q, coef_lift, surface_areas[2], max_attack_angle)
-    sideslip = calculate_sideslip(
-        beta, q, coef_sideslip, surface_areas[1], max_sideslip_angle
+    def aero_forces():
+        q = calculate_dynamic_pressure(airspeed, air_density)
+        alpha = calculate_angle_of_attack(velocity, orientation)
+        beta = calculate_angle_of_sideslip(velocity, orientation)
+
+        drag_axis, side_axis, lift_axis = calculate_aero_axes(velocity, orientation)
+        drag = calculate_drag(
+            velocity, orientation, airspeed, q, coef_drag, surface_areas
+        )
+        lift = calculate_lift(alpha, q, coef_lift, surface_areas[2], max_attack_angle)
+        sideslip = calculate_sideslip(
+            beta, q, coef_sideslip, surface_areas[1], max_sideslip_angle
+        )
+        force_body = drag * drag_axis + lift * lift_axis + sideslip * side_axis
+        return force_body
+
+    force_body = jax.lax.cond(
+        airspeed >= EPS,
+        lambda: aero_forces(),
+        lambda: jnp.array([0.0, 0.0, 0.0], dtype=FLOAT_DTYPE),
     )
-    force_body = drag + lift + sideslip
+
     return force_body
 
 
