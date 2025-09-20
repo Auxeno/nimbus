@@ -390,6 +390,46 @@ def calculate_drag(
     return drag
 
 
+def calculate_induced_drag(
+    coef_lift: FloatScalar,
+    dynamic_pressure: FloatScalar,
+    wing_area: FloatScalar,
+    aspect_ratio: FloatScalar,
+    oswald_efficiency: FloatScalar,
+) -> FloatScalar:
+    """
+    Scalar induced-drag magnitude (non-negative), no direction.
+
+    Parameters
+    ----------
+    coef_lift : FloatScalar
+        Dimensionless lift coefficient CL.
+    dynamic_pressure : FloatScalar
+        Aerodynamic pressure [N/m^2].
+    wing_area : FloatScalar
+        Wing planform area S [m^2].
+    aspect_ratio : FloatScalar
+        Wing aspect ratio AR.
+    oswald_efficiency : FloatScalar
+        Oswald efficiency factor e [0-1].
+
+    Returns
+    -------
+    induced_drag : FloatScalar
+        Non-negative induced drag magnitude [N], to be applied along +drag_axis.
+
+    Notes
+    -----
+    Uses the standard finite-wing formula:
+      C_Di = CL^2 / (pi * e * AR)
+      D_i  = q * S * C_Di
+    """
+    coef_drag_induced = coef_lift**2 / (jnp.pi * oswald_efficiency * aspect_ratio)
+    induced_drag = dynamic_pressure * wing_area * coef_drag_induced
+
+    return induced_drag
+
+
 def calculate_aero_axes(
     velocity: Vector3,
     orientation: Quaternion,
@@ -560,6 +600,14 @@ def calculate_aero_forces(
             wing_area=surface_areas[2],
         )
 
+        induced_drag = calculate_induced_drag(
+            coef_lift=coef_lift,
+            dynamic_pressure=q,
+            wing_area=surface_areas[2],
+            aspect_ratio=aspect_ratio,
+            oswald_efficiency=oswald_efficiency,
+        )
+
         sideslip = calculate_sideslip(
             beta=beta,
             dynamic_pressure=q,
@@ -568,7 +616,9 @@ def calculate_aero_forces(
             max_angle_deg=max_sideslip_angle,
         )
 
-        force_body = drag * drag_axis + lift * lift_axis + sideslip * side_axis
+        force_body = (
+            (drag + induced_drag) * drag_axis + lift * lift_axis + sideslip * side_axis
+        )
         return force_body
 
     return jax.lax.cond(

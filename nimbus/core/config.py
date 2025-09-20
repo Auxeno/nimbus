@@ -115,7 +115,7 @@ class AircraftConfig:
     surface_areas: tuple[float, float, float] = (10.0, 20.0, 30.0)
     """Reference front, side, and wing surface areas [m^2]."""
 
-    max_thrust: float = 150_000.0
+    max_thrust: float = 50_000.0
     """Maximum available engine thrust [N]."""
 
     max_attack_angle: float = 18.0
@@ -136,7 +136,7 @@ class AircraftConfig:
     max_sideslip_angle: float = 20.0
     """Maximum sideslip angle before stall [deg]."""
 
-    coef_drag: float = 0.2
+    coef_drag: float = 0.01
     """Baseline drag coefficient."""
 
     coef_sideslip: float = 5.0
