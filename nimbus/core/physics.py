@@ -220,7 +220,7 @@ def calculate_coef_lift(
     lift_slope : FloatScalar
         2D lift curve slope [1/rad], ≈ 2π for thin airfoil theory.
     aspect_ratio : FloatScalar
-        Wing aspect ratio [-].
+        Wing aspect ratio .
     oswald_efficiency : FloatScalar
         Oswald efficiency factor e [0-1].
 
@@ -507,9 +507,9 @@ def calculate_aero_forces(
     surface_areas : Vector3
         Front, side, wing areas [m^2] (in that order).
     coef_drag : FloatScalar
-        Baseline drag coefficient [-].
+        Baseline drag coefficient.
     coef_sideslip : FloatScalar
-        Sideslip effectiveness coefficient [-].
+        Sideslip effectiveness coefficient.
     max_attack_angle : FloatScalar
         Stall knee AoA [deg].
     zero_lift_attack_angle : FloatScalar
@@ -517,7 +517,7 @@ def calculate_aero_forces(
     lift_slope : FloatScalar
         2D lift curve slope [1/rad] (≈ 2π for thin airfoil).
     aspect_ratio : FloatScalar
-        Wing aspect ratio [-].
+        Wing aspect ratio .
     oswald_efficiency : FloatScalar
         Oswald efficiency factor e [0-1].
     max_sideslip_angle : FloatScalar

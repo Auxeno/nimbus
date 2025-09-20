@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from functools import partial
+from math import pi
 
 import jax
 
@@ -124,7 +125,7 @@ class AircraftConfig:
     zero_lift_attack_angle: float = -2.0
     """Angle at which no lift is generated [deg]."""
 
-    lift_slope: float = 2 * jax.numpy.pi
+    lift_slope: float = 2 * pi
     """Slope of lift curve, roughly 2π for thin airfoil."""
 
     aspect_ratio: float = 5.0
