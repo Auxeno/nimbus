@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from functools import partial
-from math import pi
 
 import jax
 
@@ -125,7 +124,7 @@ class AircraftConfig:
     zero_lift_attack_angle: float = -2.0
     """Angle at which no lift is generated [deg]."""
 
-    lift_slope: float = 2 * pi
+    lift_slope: float = 8.0
     """Slope of lift curve, roughly 2π for thin airfoil."""
 
     aspect_ratio: float = 5.0
@@ -146,7 +145,7 @@ class AircraftConfig:
     coef_rot_damping: float = 4.5
     """Rotational damping coefficient."""
 
-    coefs_torque: tuple[float, float, float] = (20.0, 4.0, 0.5)
+    coefs_torque: tuple[float, float, float] = (20.0, 5.0, 0.5)
     """Control torque coefficients for roll, pitch, and yaw."""
 
     actuator_time: float = 0.25
