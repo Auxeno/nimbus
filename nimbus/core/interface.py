@@ -276,7 +276,7 @@ def calculate_g_force(
         rho_decay=jnp.array(physics_config.rho_decay, dtype=FLOAT_DTYPE),
     )
 
-    # Calculate relative velocity (aircraft velocity minus wind)
+    # Relative air velocity (NED) and aero forces (FRD)
     wind_velocity = wind.mean + wind.gust
     relative_velocity = aircraft.body.velocity - wind_velocity
 
@@ -308,19 +308,15 @@ def calculate_g_force(
         rho_0=jnp.array(physics_config.rho_0, dtype=FLOAT_DTYPE),
     )
 
-    body_forces = aero_forces + thrust_force
-
-    world_forces = physics.calculate_weight(
-        mass=jnp.array(aircraft_config.mass, dtype=FLOAT_DTYPE),
-        gravity=jnp.array(physics_config.gravity, dtype=FLOAT_DTYPE),
+    # Specific force in body (FRD)
+    body_specific_force = (aero_forces + thrust_force) / jnp.array(
+        aircraft_config.mass, dtype=FLOAT_DTYPE
     )
 
-    body_forces += quaternion.rotate_vector(
-        world_forces, quaternion.inverse(aircraft.body.orientation)
+    # Convert to g-units
+    acceleration_g = body_specific_force / jnp.array(
+        physics_config.gravity, dtype=FLOAT_DTYPE
     )
-
-    acceleration = body_forces / aircraft_config.mass
-    acceleration_g = acceleration / physics_config.gravity
 
     return acceleration_g
 
