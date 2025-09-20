@@ -187,6 +187,7 @@ def generate_simulation(
             angular_velocity=angular_velocity.astype(FLOAT_DTYPE),
         ),
         controls=Controls.default(),
+        commanded_controls=Controls.default(),
         g_limiter_pid=PIDControllerState(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),

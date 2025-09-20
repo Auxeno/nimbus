@@ -149,6 +149,12 @@ class AircraftConfig:
     coefs_torque: tuple[float, float, float] = (20.0, 6.0, 1.0)
     """Control torque coefficients for roll, pitch, and yaw."""
 
+    actuator_time: float = 0.25
+    """Time to fully deflect an aileron, elevator or rudder surface from 0 to 1 [s]."""
+
+    engine_spool_time: float = 5.0
+    """Time to fully spool engine from zero to max thrust [s]."""
+
     g_limit_max: float = 9.0
     """Maximum positive G-force limit."""
 

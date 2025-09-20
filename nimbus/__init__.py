@@ -24,7 +24,7 @@ from nimbus.core.scenario import (
     generate_terrain_map,
 )
 from nimbus.core.simulation import (
-    set_controls,
+    update_controls,
     step,
     step_aircraft_euler,
     step_aircraft_rk4,
@@ -110,7 +110,7 @@ __all__ = [
     "generate_terrain_map",
     # Core simulation
     "step",
-    "set_controls",
+    "update_controls",
     "step_aircraft_euler",
     "step_aircraft_rk4",
     # State classes

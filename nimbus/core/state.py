@@ -99,7 +99,10 @@ class Aircraft:
     """Rigid-body physical state (position, velocity, attitude)."""
 
     controls: Controls
-    """Pilot control inputs (throttle, aileron, elevator, rudder)."""
+    """Current control surface positions (throttle, aileron, elevator, rudder)."""
+
+    commanded_controls: Controls
+    """Commanded control surface positions (throttle, aileron, elevator, rudder)."""
 
     g_limiter_pid: PIDControllerState
     """PID controller state for G-force limiter."""

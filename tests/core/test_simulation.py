@@ -14,7 +14,7 @@ from nimbus.core.quaternion import from_euler_zyx
 from nimbus.core.scenario import InitialConditions, generate_route
 from nimbus.core.simulation import (
     freeze_aircraft,
-    set_controls,
+    update_controls,
     step,
     step_aircraft_euler,
     step_aircraft_rk4,
@@ -33,7 +33,7 @@ from nimbus.core.terrain import generate_heightmap
 pi = jnp.array(jnp.pi, dtype=FLOAT_DTYPE)
 
 
-def test_set_controls(jit_mode: str) -> None:
+def test_update_controls(jit_mode: str) -> None:
     """Test control update for simulation."""
     # Standard case 1 - update all controls
     meta = Meta(
@@ -80,7 +80,7 @@ def test_set_controls(jit_mode: str) -> None:
         elevator=jnp.array(-0.3, dtype=FLOAT_DTYPE),
         rudder=jnp.array(0.1, dtype=FLOAT_DTYPE),
     )
-    result_1 = set_controls(simulation, new_controls)
+    result_1 = update_controls(simulation, new_controls)
     assert jnp.isclose(result_1.aircraft.controls.throttle, 1.0, atol=EPS)
     assert jnp.isclose(result_1.aircraft.controls.aileron, 0.5, atol=EPS)
     assert jnp.isclose(result_1.aircraft.controls.elevator, -0.3, atol=EPS)
@@ -96,7 +96,7 @@ def test_set_controls(jit_mode: str) -> None:
         elevator=jnp.array(0.0, dtype=FLOAT_DTYPE),
         rudder=jnp.array(0.0, dtype=FLOAT_DTYPE),
     )
-    result_2 = set_controls(simulation, partial_controls)
+    result_2 = update_controls(simulation, partial_controls)
     assert jnp.isclose(result_2.aircraft.controls.throttle, 0.75, atol=EPS)
     assert jnp.isclose(result_2.aircraft.controls.aileron, 0.0, atol=EPS)
 
@@ -107,7 +107,7 @@ def test_set_controls(jit_mode: str) -> None:
         elevator=jnp.array(-1.0, dtype=FLOAT_DTYPE),
         rudder=jnp.array(1.0, dtype=FLOAT_DTYPE),
     )
-    result_3 = set_controls(simulation, extreme_controls)
+    result_3 = update_controls(simulation, extreme_controls)
     assert jnp.isclose(result_3.aircraft.controls.throttle, 0.0, atol=EPS)
     assert jnp.isclose(result_3.aircraft.controls.aileron, 1.0, atol=EPS)
     assert jnp.isclose(result_3.aircraft.controls.elevator, -1.0, atol=EPS)
@@ -123,8 +123,8 @@ def test_set_controls(jit_mode: str) -> None:
         control_throttles, control_ailerons, control_elevators, control_rudders
     )
 
-    set_controls_vmap = jax.vmap(set_controls)
-    vmap_results = set_controls_vmap(simulations, controls_batch)
+    update_controls_vmap = jax.vmap(update_controls)
+    vmap_results = update_controls_vmap(simulations, controls_batch)
 
     assert vmap_results.aircraft.controls.throttle.shape == (3,)
     assert jnp.isclose(vmap_results.aircraft.controls.throttle[0], 0.25, atol=EPS)
@@ -358,20 +358,26 @@ def test_step_aircraft_rk4(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
-    result_3 = step_aircraft_rk4(aircraft_hover, wind, aircraft_config, physics_config, dt)
+    result_3 = step_aircraft_rk4(
+        aircraft_hover, wind, aircraft_config, physics_config, dt
+    )
     # Should fall under gravity
     assert result_3.body.position[2] > body_hover.position[2]  # Positive down in NED
 
     # Edge case 1 - very small timestep
     dt_small = jnp.array(0.0001, dtype=FLOAT_DTYPE)
-    result_4 = step_aircraft_rk4(aircraft, wind, aircraft_config, physics_config, dt_small)
+    result_4 = step_aircraft_rk4(
+        aircraft, wind, aircraft_config, physics_config, dt_small
+    )
     # Changes should be very small
     position_change = jnp.linalg.norm(result_4.body.position - body.position)
     assert position_change < 0.01
 
     # Edge case 2 - larger timestep
     dt_large = jnp.array(0.1, dtype=FLOAT_DTYPE)
-    result_5 = step_aircraft_rk4(aircraft, wind, aircraft_config, physics_config, dt_large)
+    result_5 = step_aircraft_rk4(
+        aircraft, wind, aircraft_config, physics_config, dt_large
+    )
     # Changes should be larger
     position_change_large = jnp.linalg.norm(result_5.body.position - body.position)
     assert position_change_large > position_change
@@ -516,7 +522,9 @@ def test_step(jit_mode: str) -> None:
     time_steps = 10
     for i in range(time_steps):
         key_step = jax.random.PRNGKey(i)
-        current_sim, current_route = step(key_step, current_sim, heightmap, current_route, config)
+        current_sim, current_route = step(
+            key_step, current_sim, heightmap, current_route, config
+        )
     # Time should have advanced by dt * steps
     expected_time = jnp.array(0.01 * time_steps, dtype=FLOAT_DTYPE)
     assert jnp.isclose(current_sim.time, expected_time, atol=EPS)
@@ -610,10 +618,12 @@ def test_step(jit_mode: str) -> None:
         metas, bodies, controls_batch, g_limiter_pid_batch
     )
     times = jnp.zeros(3, dtype=FLOAT_DTYPE)
-    winds_batch = jax.vmap(lambda _: Wind(
-        mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
-        gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
-    ))(jnp.arange(3))
+    winds_batch = jax.vmap(
+        lambda _: Wind(
+            mean=jnp.zeros(3, dtype=FLOAT_DTYPE),
+            gust=jnp.zeros(3, dtype=FLOAT_DTYPE),
+        )
+    )(jnp.arange(3))
     simulations = jax.vmap(Simulation)(aircraft_batch, winds_batch, times)
 
     # Create routes for batch processing
@@ -726,21 +736,27 @@ def test_step_aircraft_euler(jit_mode: str) -> None:
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
     )
-    result = step_aircraft_euler(aircraft_hover, wind, aircraft_config, physics_config, dt)
+    result = step_aircraft_euler(
+        aircraft_hover, wind, aircraft_config, physics_config, dt
+    )
     result_3 = step_aircraft_euler(result, wind, aircraft_config, physics_config, dt)
     # Should fall under gravity
     assert result_3.body.position[2] > body_hover.position[2]  # Positive down in NED
 
     # Edge case 1 - very small timestep
     dt_small = jnp.array(0.0001, dtype=FLOAT_DTYPE)
-    result_4 = step_aircraft_euler(aircraft, wind, aircraft_config, physics_config, dt_small)
+    result_4 = step_aircraft_euler(
+        aircraft, wind, aircraft_config, physics_config, dt_small
+    )
     # Changes should be very small
     position_change = jnp.linalg.norm(result_4.body.position - body.position)
     assert position_change < 0.01
 
     # Edge case 2 - larger timestep
     dt_large = jnp.array(0.1, dtype=FLOAT_DTYPE)
-    result_5 = step_aircraft_euler(aircraft, wind, aircraft_config, physics_config, dt_large)
+    result_5 = step_aircraft_euler(
+        aircraft, wind, aircraft_config, physics_config, dt_large
+    )
     # Changes should be larger
     position_change_large = jnp.linalg.norm(result_5.body.position - body.position)
     assert position_change_large > position_change
