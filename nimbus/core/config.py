@@ -119,7 +119,7 @@ class AircraftConfig:
     max_thrust: float = 150_000.0
     """Maximum available engine thrust [N]."""
 
-    max_attack_angle: float = 15.0
+    max_attack_angle: float = 18.0
     """Maximum angle of attack before stall [deg]."""
 
     zero_lift_attack_angle: float = -2.0
@@ -146,7 +146,7 @@ class AircraftConfig:
     coef_rot_damping: float = 4.5
     """Rotational damping coefficient."""
 
-    coefs_torque: tuple[float, float, float] = (20.0, 6.0, 1.0)
+    coefs_torque: tuple[float, float, float] = (20.0, 4.0, 0.5)
     """Control torque coefficients for roll, pitch, and yaw."""
 
     actuator_time: float = 0.25
@@ -162,7 +162,11 @@ class AircraftConfig:
     """Minimum negative G-force limit."""
 
     g_limiter_controller_config: PIDControllerConfig = PIDControllerConfig(
-        kp=2.0, ki=1.0, kd=0.5, max_correction=1.2, integral_limit=2.0
+        kp=2.0,
+        ki=0.5,
+        kd=0.5,
+        max_correction=1.0,
+        integral_limit=3.0,
     )
     """PID controller configuration for G-limiter."""
 

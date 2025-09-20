@@ -243,6 +243,19 @@ def step(
         operand=(route, jnp.array(config.route.loop, dtype=bool)),
     )
 
+    # Apply G-limiter to raw control inputs
+    adjusted_controls, new_pid_state = apply_g_limiter(
+        aircraft=aircraft,
+        controls=aircraft.commanded_controls,
+        wind=wind,
+        aircraft_config=config.aircraft,
+        physics_config=config.physics,
+        dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
+    )
+    aircraft = replace(
+        aircraft, commanded_controls=adjusted_controls, g_limiter_pid=new_pid_state
+    )
+
     # Update engine and control surfaces
     controls = step_controls(
         current=aircraft.controls,
@@ -254,19 +267,6 @@ def step(
         dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
     )
     aircraft = replace(aircraft, controls=controls)
-
-    # Apply G-limiter to raw control inputs
-    adjusted_controls, new_pid_state = apply_g_limiter(
-        aircraft=aircraft,
-        controls=aircraft.controls,
-        wind=wind,
-        aircraft_config=config.aircraft,
-        physics_config=config.physics,
-        dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
-    )
-    aircraft = replace(
-        aircraft, controls=adjusted_controls, g_limiter_pid=new_pid_state
-    )
 
     # Aircraft dynamics update
     aircraft = jax.lax.cond(
