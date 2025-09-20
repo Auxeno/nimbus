@@ -60,12 +60,21 @@ def calculate_translational_acceleration(
         velocity=relative_velocity,
         orientation=aircraft.body.orientation,
         air_density=air_density,
+        surface_areas=jnp.array(aircraft_config.surface_areas, dtype=FLOAT_DTYPE),
         coef_drag=jnp.array(aircraft_config.coef_drag, dtype=FLOAT_DTYPE),
-        coef_lift=jnp.array(aircraft_config.coef_lift, dtype=FLOAT_DTYPE),
         coef_sideslip=jnp.array(aircraft_config.coef_sideslip, dtype=FLOAT_DTYPE),
         max_attack_angle=jnp.array(aircraft_config.max_attack_angle, dtype=FLOAT_DTYPE),
-        max_sideslip_angle=jnp.array(aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE),
-        surface_areas=jnp.array(aircraft_config.surface_areas, dtype=FLOAT_DTYPE),
+        zero_lift_attack_angle=jnp.array(
+            aircraft_config.zero_lift_attack_angle, dtype=FLOAT_DTYPE
+        ),
+        lift_slope=jnp.array(aircraft_config.lift_slope, dtype=FLOAT_DTYPE),
+        aspect_ratio=jnp.array(aircraft_config.aspect_ratio, dtype=FLOAT_DTYPE),
+        oswald_efficiency=jnp.array(
+            aircraft_config.oswald_efficiency, dtype=FLOAT_DTYPE
+        ),
+        max_sideslip_angle=jnp.array(
+            aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE
+        ),
     )
 
     thrust_force = physics.calculate_thrust(
@@ -275,12 +284,21 @@ def calculate_g_force(
         velocity=relative_velocity,
         orientation=aircraft.body.orientation,
         air_density=air_density,
+        surface_areas=jnp.array(aircraft_config.surface_areas, dtype=FLOAT_DTYPE),
         coef_drag=jnp.array(aircraft_config.coef_drag, dtype=FLOAT_DTYPE),
-        coef_lift=jnp.array(aircraft_config.coef_lift, dtype=FLOAT_DTYPE),
         coef_sideslip=jnp.array(aircraft_config.coef_sideslip, dtype=FLOAT_DTYPE),
         max_attack_angle=jnp.array(aircraft_config.max_attack_angle, dtype=FLOAT_DTYPE),
-        max_sideslip_angle=jnp.array(aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE),
-        surface_areas=jnp.array(aircraft_config.surface_areas, dtype=FLOAT_DTYPE),
+        zero_lift_attack_angle=jnp.array(
+            aircraft_config.zero_lift_attack_angle, dtype=FLOAT_DTYPE
+        ),
+        lift_slope=jnp.array(aircraft_config.lift_slope, dtype=FLOAT_DTYPE),
+        aspect_ratio=jnp.array(aircraft_config.aspect_ratio, dtype=FLOAT_DTYPE),
+        oswald_efficiency=jnp.array(
+            aircraft_config.oswald_efficiency, dtype=FLOAT_DTYPE
+        ),
+        max_sideslip_angle=jnp.array(
+            aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE
+        ),
     )
 
     thrust_force = physics.calculate_thrust(

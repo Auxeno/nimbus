@@ -118,17 +118,26 @@ class AircraftConfig:
     max_thrust: float = 150_000.0
     """Maximum available engine thrust [N]."""
 
-    max_attack_angle: float = 18.0
-    """Maximum angle of attack before stall [degrees]."""
+    max_attack_angle: float = 15.0
+    """Maximum angle of attack before stall [deg]."""
+
+    zero_lift_attack_angle: float = -2.0
+    """Angle at which no lift is generated [deg]."""
+
+    lift_slope: float = 2 * jax.numpy.pi
+    """Slope of lift curve, roughly 2π for thin airfoil."""
+
+    aspect_ratio: float = 5.0
+    """Wing aspect ratio."""
+
+    oswald_efficiency: float = 0.8
+    """Wing Oswald efficiency number."""
 
     max_sideslip_angle: float = 20.0
-    """Maximum sideslip angle before stall [degrees]."""
+    """Maximum sideslip angle before stall [deg]."""
 
     coef_drag: float = 0.2
     """Baseline drag coefficient."""
-
-    coef_lift: float = 15.0
-    """Lift curve slope coefficient."""
 
     coef_sideslip: float = 5.0
     """Sideslip slop coefficient."""
