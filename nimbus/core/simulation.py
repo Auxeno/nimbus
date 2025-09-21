@@ -15,11 +15,12 @@ from .interface import (
     update_wind,
     waypoint_hit,
 )
+from .logic import step_controls
 from .primitives import FLOAT_DTYPE, FloatScalar, Matrix, PRNGKey
 from .state import Aircraft, Body, Controls, Meta, Route, Simulation, Wind
 
 
-def set_controls(simulation: Simulation, controls: Controls) -> Simulation:
+def update_controls(simulation: Simulation, commanded_controls: Controls) -> Simulation:
     """
     Update simulation with new control inputs.
 
@@ -27,15 +28,15 @@ def set_controls(simulation: Simulation, controls: Controls) -> Simulation:
     ----------
     simulation : Simulation
         Current simulation state.
-    controls : Controls
-        New control inputs (throttle, aileron, elevator, rudder).
+    commanded_controls : Controls
+        New commanded control inputs (throttle, aileron, elevator, rudder).
 
     Returns
     -------
     Simulation
         Updated simulation with new controls.
     """
-    aircraft = replace(simulation.aircraft, controls=controls)
+    aircraft = replace(simulation.aircraft, commanded_controls=commanded_controls)
     return replace(simulation, aircraft=aircraft)
 
 
@@ -68,7 +69,9 @@ def step_aircraft_euler(
         Aircraft state after one time step.
     """
     # Derivatives at the current state
-    dx, dv, dq, dw = aircraft_state_derivatives(aircraft, wind, aircraft_config, physics_config)
+    dx, dv, dq, dw = aircraft_state_derivatives(
+        aircraft, wind, aircraft_config, physics_config
+    )
 
     return replace(
         aircraft,
@@ -221,7 +224,8 @@ def step(
         heightmap=heightmap,
         map_config=config.map,
     )
-    active = jnp.logical_and(simulation.aircraft.meta.active, jnp.logical_not(colliding))
+    active = simulation.aircraft.meta.active & ~colliding
+
     aircraft = replace(
         simulation.aircraft,
         meta=Meta(
@@ -238,16 +242,30 @@ def step(
         operand=(route, jnp.array(config.route.loop, dtype=bool)),
     )
 
-    # Apply G-limiter to aircraft controls
+    # Apply G-limiter to raw control inputs
     adjusted_controls, new_pid_state = apply_g_limiter(
         aircraft=aircraft,
-        controls=aircraft.controls,
+        controls=aircraft.commanded_controls,
         wind=wind,
         aircraft_config=config.aircraft,
         physics_config=config.physics,
         dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
     )
-    aircraft = replace(aircraft, controls=adjusted_controls, g_limiter_pid=new_pid_state)
+    aircraft = replace(
+        aircraft, commanded_controls=adjusted_controls, g_limiter_pid=new_pid_state
+    )
+
+    # Update engine and control surfaces
+    controls = step_controls(
+        current=aircraft.controls,
+        commanded=aircraft.commanded_controls,
+        engine_spool_time=jnp.array(
+            config.aircraft.engine_spool_time, dtype=FLOAT_DTYPE
+        ),
+        actuator_time=jnp.array(config.aircraft.actuator_time, dtype=FLOAT_DTYPE),
+        dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
+    )
+    aircraft = replace(aircraft, controls=controls)
 
     # Aircraft dynamics update
     aircraft = jax.lax.cond(

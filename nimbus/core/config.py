@@ -115,20 +115,29 @@ class AircraftConfig:
     surface_areas: tuple[float, float, float] = (10.0, 20.0, 30.0)
     """Reference front, side, and wing surface areas [m^2]."""
 
-    max_thrust: float = 150_000.0
+    max_thrust: float = 50_000.0
     """Maximum available engine thrust [N]."""
 
     max_attack_angle: float = 18.0
-    """Maximum angle of attack before stall [degrees]."""
+    """Maximum angle of attack before stall [deg]."""
+
+    zero_lift_attack_angle: float = -2.0
+    """Angle at which no lift is generated [deg]."""
+
+    lift_slope: float = 8.0
+    """Slope of lift curve, roughly 2π for thin airfoil."""
+
+    aspect_ratio: float = 5.0
+    """Wing aspect ratio."""
+
+    oswald_efficiency: float = 0.8
+    """Wing Oswald efficiency number."""
 
     max_sideslip_angle: float = 20.0
-    """Maximum sideslip angle before stall [degrees]."""
+    """Maximum sideslip angle before stall [deg]."""
 
-    coef_drag: float = 0.2
+    coef_drag: float = 0.01
     """Baseline drag coefficient."""
-
-    coef_lift: float = 10.0
-    """Lift curve slope coefficient."""
 
     coef_sideslip: float = 5.0
     """Sideslip slop coefficient."""
@@ -136,8 +145,14 @@ class AircraftConfig:
     coef_rot_damping: float = 4.5
     """Rotational damping coefficient."""
 
-    coefs_torque: tuple[float, float, float] = (20.0, 6.0, 1.0)
+    coefs_torque: tuple[float, float, float] = (20.0, 5.0, 0.5)
     """Control torque coefficients for roll, pitch, and yaw."""
+
+    actuator_time: float = 0.25
+    """Time to fully deflect an aileron, elevator or rudder surface from 0 to 1 [s]."""
+
+    engine_spool_time: float = 5.0
+    """Time to fully spool engine from zero to max thrust [s]."""
 
     g_limit_max: float = 9.0
     """Maximum positive G-force limit."""
@@ -146,7 +161,11 @@ class AircraftConfig:
     """Minimum negative G-force limit."""
 
     g_limiter_controller_config: PIDControllerConfig = PIDControllerConfig(
-        kp=2.0, ki=1.0, kd=0.5, max_correction=1.2, integral_limit=2.0
+        kp=2.0,
+        ki=0.5,
+        kd=0.5,
+        max_correction=1.0,
+        integral_limit=3.0,
     )
     """PID controller configuration for G-limiter."""
 
@@ -168,7 +187,7 @@ class RouteConfig:
 class WindConfig:
     """Configuration for wind gust generation."""
 
-    gust_intensity: float = 5.0
+    gust_intensity: float = 2.0
     """RMS intensity of wind gusts [m/s]."""
 
     gust_duration: float = 5.0

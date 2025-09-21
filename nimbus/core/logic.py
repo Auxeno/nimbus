@@ -4,7 +4,74 @@ import jax.numpy as jnp
 
 from .config import PIDControllerConfig
 from .primitives import FLOAT_DTYPE, FloatScalar
-from .state import PIDControllerState
+from .state import Controls, PIDControllerState
+
+
+def step_controls(
+    current: Controls,
+    commanded: Controls,
+    engine_spool_time: FloatScalar,
+    actuator_time: FloatScalar,
+    dt: FloatScalar,
+) -> Controls:
+    """
+    Slew current control values toward commanded values with simple rate limits.
+
+    Parameters
+    ----------
+    current : Controls
+        Current (actuated) control values used by the physics step.
+    commanded : Controls
+        Target control values produced by pilot/autopilot/G-limiter.
+    engine_spool_time : FloatScalar
+        Seconds for throttle to move from 0 → 1 under full step input.
+    actuator_time : FloatScalar
+        Seconds for a surface to move by 1.0 (e.g., from -1 → 0 or 0 → +1).
+    dt : FloatScalar
+        Simulation time step [s].
+
+    Returns
+    -------
+    Controls
+        Updated current controls after applying rate limits and clamping.
+    """
+    throttle_step = dt / engine_spool_time
+    throttle_delta = jnp.clip(
+        commanded.throttle - current.throttle,
+        -throttle_step,
+        throttle_step,
+    )
+    throttle = jnp.clip(current.throttle + throttle_delta, 0.0, 1.0)
+
+    actuator_step = dt / actuator_time
+
+    aileron_delta = jnp.clip(
+        commanded.aileron - current.aileron,
+        -actuator_step,
+        actuator_step,
+    )
+    aileron = jnp.clip(current.aileron + aileron_delta, -1.0, 1.0)
+
+    elevator_delta = jnp.clip(
+        commanded.elevator - current.elevator,
+        -actuator_step,
+        actuator_step,
+    )
+    elevator = jnp.clip(current.elevator + elevator_delta, -1.0, 1.0)
+
+    rudder_delta = jnp.clip(
+        commanded.rudder - current.rudder,
+        -actuator_step,
+        actuator_step,
+    )
+    rudder = jnp.clip(current.rudder + rudder_delta, -1.0, 1.0)
+
+    return Controls(
+        throttle=throttle,
+        aileron=aileron,
+        elevator=elevator,
+        rudder=rudder,
+    )
 
 
 def update_pid(

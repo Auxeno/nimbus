@@ -110,7 +110,12 @@ def interpolate_bilinear(
     h11 = heightmap[u1, v1]
 
     # Bilinear blend
-    return h00 * (1 - tu) * (1 - tv) + h10 * tu * (1 - tv) + h01 * (1 - tu) * tv + h11 * tu * tv
+    return (
+        h00 * (1 - tu) * (1 - tv)
+        + h10 * tu * (1 - tv)
+        + h01 * (1 - tu) * tv
+        + h11 * tu * tv
+    )
 
 
 def calculate_height_diff(
@@ -164,10 +169,7 @@ def calculate_height_diff(
         return d - ground_down
 
     # Out-of-bounds check (oob terrain height = 0)
-    out_of_bounds = jnp.logical_or(
-        jnp.logical_or(u < 0.0, u >= rows_f),
-        jnp.logical_or(v < 0.0, v >= cols_f),
-    )
+    out_of_bounds = ((u < 0.0) | (u >= rows_f)) | ((v < 0.0) | (v >= cols_f))
 
     return jax.lax.cond(out_of_bounds, lambda: d, lambda: calculate_terrain_height())
 

@@ -32,7 +32,7 @@ from ursina.shaders import lit_with_shadows_shader, unlit_shader
 from ..core.config import SimulationConfig
 from ..core.interface import calculate_g_force
 from ..core.primitives import FLOAT_DTYPE, Matrix, Vector3
-from ..core.simulation import set_controls, step
+from ..core.simulation import update_controls, step
 from ..core.state import Aircraft, Controls, Route, Simulation
 from .config import UrsinaConfig
 from .utils import (
@@ -53,7 +53,7 @@ Entity.default_shader = lit_with_shadows_shader  # type: ignore
 # JIT compile functions used by simulation
 step = jax.jit(step)
 calculate_g_force = jax.jit(calculate_g_force)
-set_controls = jax.jit(set_controls)
+update_controls = jax.jit(update_controls)
 compute_flight_metrics = jax.jit(compute_flight_metrics)
 
 
@@ -723,8 +723,8 @@ class Coordinator(Entity):
         )
 
     def update(self) -> None:
-        controls = self.input_handler.get_inputs()
-        self.simulation = set_controls(self.simulation, controls)
+        commanded_controls = self.input_handler.get_inputs()
+        self.simulation = update_controls(self.simulation, commanded_controls)
         key = jax.random.PRNGKey(int(time.time() * 1000000) % 2**32)
         self.simulation, self.route = step(
             key, self.simulation, self.heightmap, self.route, self.config
