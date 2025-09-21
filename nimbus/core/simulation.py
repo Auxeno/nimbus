@@ -224,9 +224,8 @@ def step(
         heightmap=heightmap,
         map_config=config.map,
     )
-    active = jnp.logical_and(
-        simulation.aircraft.meta.active, jnp.logical_not(colliding)
-    )
+    active = simulation.aircraft.meta.active & ~colliding
+
     aircraft = replace(
         simulation.aircraft,
         meta=Meta(

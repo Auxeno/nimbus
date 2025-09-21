@@ -403,13 +403,13 @@ def waypoint_hit(
     BoolScalar
         True if aircraft is within radius of current unvisited waypoint, else False.
     """
-    return jnp.logical_and(
+    return (
         spatial.spherical_collision(
             position_1=aircraft.body.position,
             position_2=route.positions[route.current_idx],
             distance=jnp.array(route_config.radius, dtype=FLOAT_DTYPE),
-        ),
-        jnp.logical_not(route.visited[route.current_idx]),
+        )
+        & ~route.visited[route.current_idx]
     )
 
 
@@ -441,7 +441,7 @@ def next_waypoint(route: Route, loop: BoolScalar) -> Route:
     )
 
     visited = jax.lax.cond(
-        jnp.logical_and(next_idx == 0, loop),
+        (next_idx == 0) & loop,
         lambda: jnp.zeros_like(route.visited),
         lambda: visited,
     )
