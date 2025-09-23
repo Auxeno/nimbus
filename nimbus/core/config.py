@@ -169,6 +169,18 @@ class AircraftConfig:
     )
     """PID controller configuration for G-limiter."""
 
+    aoa_limit: float = 15.0
+    """Min and max angle of attack limit."""
+
+    aoa_limiter_controller_config: PIDControllerConfig = PIDControllerConfig(
+        kp=2.0,
+        ki=0.5,
+        kd=0.5,
+        max_correction=1.0,
+        integral_limit=3.0,
+    )
+    """PID controller configuration for AoA-limiter."""
+
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)

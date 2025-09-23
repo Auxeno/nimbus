@@ -192,6 +192,10 @@ def generate_simulation(
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
+        aoa_limiter_pid=PIDControllerState(
+            previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
+            integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
+        ),
     )
 
     # Initialise wind with mean and zero gusts

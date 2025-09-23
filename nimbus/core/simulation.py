@@ -9,6 +9,7 @@ from . import quaternion
 from .config import AircraftConfig, PhysicsConfig, SimulationConfig
 from .interface import (
     aircraft_state_derivatives,
+    apply_aoa_limiter,
     apply_g_limiter,
     next_waypoint,
     terrain_collision,
@@ -253,6 +254,17 @@ def step(
     )
     aircraft = replace(
         aircraft, commanded_controls=adjusted_controls, g_limiter_pid=new_pid_state
+    )
+
+    adjusted_controls, new_pid_state = apply_aoa_limiter(
+        aircraft=aircraft,
+        controls=aircraft.commanded_controls,
+        wind=wind,
+        aircraft_config=config.aircraft,
+        dt=jnp.array(config.dt, dtype=FLOAT_DTYPE),
+    )
+    aircraft = replace(
+        aircraft, commanded_controls=adjusted_controls, aoa_limiter_pid=new_pid_state
     )
 
     # Update engine and control surfaces

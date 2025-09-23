@@ -381,6 +381,42 @@ def apply_g_limiter(
     return adjusted_controls, new_pid_state
 
 
+def apply_aoa_limiter(
+    aircraft: Aircraft,
+    controls: Controls,
+    wind: Wind,
+    aircraft_config: AircraftConfig,
+    dt: FloatScalar,
+) -> tuple[Controls, PIDControllerState]:
+    """ """
+    velocity = aircraft.body.velocity - (wind.mean + wind.gust)
+    alpha = jnp.rad2deg(
+        physics.calculate_angle_of_attack(velocity, aircraft.body.orientation)
+    )
+
+    aoa_limit = jnp.array(aircraft_config.aoa_limit, dtype=FLOAT_DTYPE)
+
+    saturated_aoa = jnp.clip(alpha, -aoa_limit, aoa_limit)
+    error = alpha - saturated_aoa
+
+    correction, new_pid_state = logic.update_pid(
+        error,
+        aircraft.aoa_limiter_pid,
+        aircraft_config.aoa_limiter_controller_config,
+        dt,
+    )
+
+    adjusted_elevator = jnp.clip(
+        controls.elevator - correction,
+        jnp.array(-1.0, dtype=FLOAT_DTYPE),
+        jnp.array(1.0, dtype=FLOAT_DTYPE),
+    )
+
+    adjusted_controls = replace(controls, elevator=adjusted_elevator)
+
+    return adjusted_controls, new_pid_state
+
+
 def waypoint_hit(
     aircraft: Aircraft,
     route: Route,

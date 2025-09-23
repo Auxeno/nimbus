@@ -107,6 +107,9 @@ class Aircraft:
     g_limiter_pid: PIDControllerState
     """PID controller state for G-force limiter."""
 
+    aoa_limiter_pid: PIDControllerState
+    """PID controller state for AoA limiter."""
+
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
