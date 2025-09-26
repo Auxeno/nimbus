@@ -1,5 +1,7 @@
 """Control logic functions for simulation."""
 
+from dataclasses import replace
+
 import jax.numpy as jnp
 
 from .config import PIDControllerConfig
@@ -119,6 +121,6 @@ def update_pid(
     output = kp * error + ki * integral + kd * derivative
     output = jnp.clip(output, -max_correction, max_correction)
 
-    new_state = PIDControllerState(previous_error=error, integral=integral)
+    new_state = replace(pid_state, previous_error=error, integral=integral)
 
     return output, new_state

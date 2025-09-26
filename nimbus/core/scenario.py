@@ -189,6 +189,7 @@ def generate_simulation(
         controls=Controls.default(),
         commanded_controls=Controls.default(),
         g_limiter_pid=PIDControllerState(
+            previous=jnp.array(0.0, dtype=FLOAT_DTYPE),
             previous_error=jnp.array(0.0, dtype=FLOAT_DTYPE),
             integral=jnp.array(0.0, dtype=FLOAT_DTYPE),
         ),
