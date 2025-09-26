@@ -52,6 +52,9 @@ class Body:
 class PIDControllerState:
     """Generic PID controller state."""
 
+    previous: FloatScalar
+    """Previous value of quantity being controlled."""
+
     previous_error: FloatScalar
     """Previous error value for derivative term."""
 

@@ -357,11 +357,17 @@ def apply_g_limiter(
     # Negate for pilot convention: positive G = pulling up
     current_g = -g_forces[2]
 
-    g_min = jnp.array(aircraft_config.g_limit_min, dtype=FLOAT_DTYPE)
-    g_max = jnp.array(aircraft_config.g_limit_max, dtype=FLOAT_DTYPE)
+    # Predict ahead using rate of g-force change and actuator delay
+    g_dot = (current_g - aircraft.g_limiter_pid.previous) / dt
+    tau = jnp.array(aircraft_config.actuator_time, dtype=FLOAT_DTYPE)
+    g_pred = current_g + g_dot * (tau + 0.5 * dt)
 
-    saturated_g = jnp.clip(current_g, g_min, g_max)
-    error = current_g - saturated_g
+    saturated_g = jnp.clip(
+        g_pred,
+        jnp.array(aircraft_config.g_limit_min, dtype=FLOAT_DTYPE),
+        jnp.array(aircraft_config.g_limit_max, dtype=FLOAT_DTYPE),
+    )
+    error = g_pred - saturated_g
 
     correction, new_pid_state = logic.update_pid(
         error,
@@ -369,6 +375,8 @@ def apply_g_limiter(
         aircraft_config.g_limiter_controller_config,
         dt,
     )
+
+    new_pid_state = replace(new_pid_state, previous=current_g)
 
     adjusted_elevator = jnp.clip(
         controls.elevator - correction,
