@@ -362,10 +362,11 @@ def apply_g_limiter(
     tau = jnp.array(aircraft_config.actuator_time, dtype=FLOAT_DTYPE)
     g_pred = current_g + g_dot * (tau + 0.5 * dt)
 
+    # Slightly reduce upper and lower limits to reduce overshoot
     saturated_g = jnp.clip(
         g_pred,
-        jnp.array(aircraft_config.g_limit_min, dtype=FLOAT_DTYPE),
-        jnp.array(aircraft_config.g_limit_max, dtype=FLOAT_DTYPE),
+        jnp.array(aircraft_config.g_limit_min + 0.5, dtype=FLOAT_DTYPE),
+        jnp.array(aircraft_config.g_limit_max - 0.5, dtype=FLOAT_DTYPE),
     )
     error = g_pred - saturated_g
 

@@ -162,10 +162,10 @@ class AircraftConfig:
 
     g_limiter_controller_config: PIDControllerConfig = PIDControllerConfig(
         kp=3.0,
-        ki=0.5,
-        kd=0.4,
+        ki=0.0,
+        kd=0.1,
         max_correction=1.0,
-        integral_limit=2.0,
+        integral_limit=1.0,
     )
     """PID controller configuration for G-limiter."""
 
