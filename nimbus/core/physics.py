@@ -66,39 +66,6 @@ def calculate_dynamic_pressure(
     return q
 
 
-def calculate_dynamic_pressure_scale(
-    q: FloatScalar,
-    q_falloff_speed: FloatScalar,
-    air_density: FloatScalar,
-) -> FloatScalar:
-    """
-    Apply low-speed aero effectiveness scaling based on a reference speed.
-
-    Parameters
-    ----------
-    q: FloatScalar
-        Dynamic pressure [N/m^2].
-    q_falloff_speed: FloatScalar
-        Used to scale down control surface effectiveness at low speeds [m/s].
-    air_density: FloatScalar
-        Density of air [kg/m^3].
-
-    Returns
-    -------
-    scale: FloatScalar
-        Scale of dynamic pressure [0, 1].
-    """
-
-    # Dynamic pressure at the reference and half reference speeds
-    q_ref = calculate_dynamic_pressure(q_falloff_speed, air_density)
-    q_half = calculate_dynamic_pressure(0.5 * q_falloff_speed, air_density)
-
-    scale = (q - q_half) / (q_ref - q_half)
-    scale = jnp.where(q <= q_half, 0.0, scale)
-    scale = jnp.where(q >= q_ref, 1.0, scale)
-    return scale
-
-
 def calculate_angle_of_attack(
     velocity: Vector3,
     orientation: Quaternion,
@@ -146,6 +113,61 @@ def calculate_angle_of_sideslip(
     velocity_body = quaternion.rotate_vector(velocity, quaternion.inverse(orientation))
     beta = jnp.arctan2(velocity_body[1], velocity_body[0])
     return beta
+
+
+def calculate_mach_number(
+    airspeed: FloatScalar,
+    speed_of_sound: FloatScalar,
+) -> FloatScalar:
+    """
+    Calculate Mach number.
+
+    Parameters
+    ----------
+    airspeed : FloatScalar
+        True airspeed [m/s].
+    speed_of_sound : FloatScalar
+        Local speed of sound [m/s].
+
+    Returns
+    -------
+    mach : FloatScalar
+        Mach number.
+    """
+    mach = airspeed / jnp.maximum(speed_of_sound, EPS)
+    return mach
+
+
+def calculate_transonic_factor(
+    mach: FloatScalar,
+    critical_mach: FloatScalar,
+) -> FloatScalar:
+    """
+    Smooth onset factor in [0, 1] for supersonic effects.
+
+    Parameters
+    ----------
+    mach : FloatScalar
+        Mach number.
+    critical_mach : FloatScalar
+        Critical Mach number where compressibility effects begin.
+
+    Returns
+    -------
+    factor : FloatScalar
+        Dimensionless onset factor in [0, 1].
+        ~0 below `critical_mach`, ~1 above the end of the transonic region.
+    """
+    # Mach number at which factor saturates marking end of transonic region
+    full = 1.1
+
+    # Controls steepness of tanh transition
+    softness = 0.18
+
+    t = (mach - critical_mach) / jnp.maximum(full - critical_mach, EPS)
+    factor = 0.5 * (jnp.tanh((t - 0.5) / softness) + 1.0)
+
+    return factor
 
 
 def calculate_weight(mass: FloatScalar, gravity: FloatScalar) -> Vector3:
