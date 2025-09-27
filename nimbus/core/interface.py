@@ -60,6 +60,7 @@ def calculate_translational_acceleration(
         velocity=relative_velocity,
         orientation=aircraft.body.orientation,
         air_density=air_density,
+        speed_of_sound=jnp.array(physics_config.speed_of_sound, dtype=FLOAT_DTYPE),
         surface_areas=jnp.array(aircraft_config.surface_areas, dtype=FLOAT_DTYPE),
         coef_drag=jnp.array(aircraft_config.coef_drag, dtype=FLOAT_DTYPE),
         coef_sideslip=jnp.array(aircraft_config.coef_sideslip, dtype=FLOAT_DTYPE),
@@ -75,6 +76,8 @@ def calculate_translational_acceleration(
         max_sideslip_angle=jnp.array(
             aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE
         ),
+        critical_mach=jnp.array(aircraft_config.critical_mach, dtype=FLOAT_DTYPE),
+        wave_drag_gain=jnp.array(aircraft_config.wave_drag_gain, dtype=FLOAT_DTYPE),
     )
 
     thrust_force = physics.calculate_thrust(
@@ -284,6 +287,7 @@ def calculate_g_force(
         velocity=relative_velocity,
         orientation=aircraft.body.orientation,
         air_density=air_density,
+        speed_of_sound=jnp.array(physics_config.speed_of_sound, dtype=FLOAT_DTYPE),
         surface_areas=jnp.array(aircraft_config.surface_areas, dtype=FLOAT_DTYPE),
         coef_drag=jnp.array(aircraft_config.coef_drag, dtype=FLOAT_DTYPE),
         coef_sideslip=jnp.array(aircraft_config.coef_sideslip, dtype=FLOAT_DTYPE),
@@ -299,6 +303,8 @@ def calculate_g_force(
         max_sideslip_angle=jnp.array(
             aircraft_config.max_sideslip_angle, dtype=FLOAT_DTYPE
         ),
+        critical_mach=jnp.array(aircraft_config.critical_mach, dtype=FLOAT_DTYPE),
+        wave_drag_gain=jnp.array(aircraft_config.wave_drag_gain, dtype=FLOAT_DTYPE),
     )
 
     thrust_force = physics.calculate_thrust(

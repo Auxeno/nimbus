@@ -293,6 +293,42 @@ def calculate_coef_lift(
     return cl
 
 
+def calculate_coef_wave_drag(
+    mach: FloatScalar,
+    critical_mach: FloatScalar,
+    wave_drag_gain: FloatScalar,
+) -> FloatScalar:
+    """
+    Smooth transonic-onset wave-drag coefficient.
+
+    Parameters
+    ----------
+    mach: FloatScalar
+        Mach number.
+    critical_mach: FloatScalar
+        Critical Mach for onset of wave drag.
+    wave_drag_gain: FloatScalar
+        Wave-drag scaling factor (dimensionless).
+
+    Returns
+    -------
+    coef_wave_drag: FloatScalar
+        Additional drag coefficient due to wave drag (dimensionless).
+
+    Notes
+    -----
+    Uses a simple quadratic growth after onset:
+      C_Dw = wave_drag_gain * T(M) * max(M - M_crit, 0)^2
+    where T(M) is a smooth transonic factor in [0,1], provided by
+    `calculate_transonic_factor`.
+    """
+    # Smooth factor ~0 below Mcrit, ramps through transonic, ~1 by ~M≈1.1
+    onset = calculate_transonic_factor(mach=mach, critical_mach=critical_mach)
+    delta = jnp.maximum(mach - critical_mach, 0.0)
+    coef_wave_drag = wave_drag_gain * onset * (delta**2)
+    return coef_wave_drag
+
+
 def calculate_lift(
     coef_lift: FloatScalar,
     dynamic_pressure: FloatScalar,
@@ -395,7 +431,7 @@ def calculate_drag(
     coef_drag : FloatScalar
         Drag coefficient.
     surface_areas : Vector3
-        Front, side, top areas [m^2].
+        Front, side, planform areas [m^2].
 
     Returns
     -------
@@ -424,15 +460,15 @@ def calculate_induced_drag(
 
     Parameters
     ----------
-    coef_lift : FloatScalar
+    coef_lift: FloatScalar
         Dimensionless lift coefficient CL.
-    dynamic_pressure : FloatScalar
+    dynamic_pressure: FloatScalar
         Aerodynamic pressure [N/m^2].
-    wing_area : FloatScalar
+    wing_area: FloatScalar
         Wing planform area S [m^2].
-    aspect_ratio : FloatScalar
+    aspect_ratio: FloatScalar
         Wing aspect ratio AR.
-    oswald_efficiency : FloatScalar
+    oswald_efficiency: FloatScalar
         Oswald efficiency factor e [0-1].
 
     Returns
@@ -450,6 +486,31 @@ def calculate_induced_drag(
     induced_drag = dynamic_pressure * wing_area * coef_drag_induced
 
     return induced_drag
+
+
+def calculate_wave_drag(
+    coef_wave_drag: FloatScalar,
+    dynamic_pressure: FloatScalar,
+    wing_area: FloatScalar,
+) -> FloatScalar:
+    """
+    Scalar wave-drag magnitude (non-negative), no direction.
+
+    Parameters
+    ----------
+    coef_wave_drag: FloatScalar
+        Dimensionless wave-drag coefficient.
+    dynamic_pressure: FloatScalar
+        Aerodynamic pressure [N/m^2].
+    wing_area: FloatScalar
+        Wing planform area S [m^2].
+
+    Returns
+    -------
+    wave_drag: FloatScalar
+        Non-negative wave-drag magnitude [N], applied along +drag_axis.
+    """
+    return dynamic_pressure * wing_area * coef_wave_drag
 
 
 def calculate_aero_axes(
@@ -545,6 +606,7 @@ def calculate_aero_forces(
     velocity: Vector3,
     orientation: Quaternion,
     air_density: FloatScalar,
+    speed_of_sound: FloatScalar,
     surface_areas: Vector3,
     coef_drag: FloatScalar,
     coef_sideslip: FloatScalar,
@@ -554,9 +616,11 @@ def calculate_aero_forces(
     aspect_ratio: FloatScalar,
     oswald_efficiency: FloatScalar,
     max_sideslip_angle: FloatScalar,
+    critical_mach: FloatScalar,
+    wave_drag_gain: FloatScalar,
 ) -> Vector3:
     """
-    Calculate aerodynamic forces in FRD body-frame (drag + lift + sideslip).
+    Calculate aerodynamic forces in FRD body-frame (drag + lift + sideslip + wave).
 
     Parameters
     ----------
@@ -566,8 +630,10 @@ def calculate_aero_forces(
         Body-to-world orientation quaternion.
     air_density : FloatScalar
         Air density [kg/m^3].
+    speed_of_sound : FloatScalar
+        Local speed of sound [m/s].
     surface_areas : Vector3
-        Front, side, wing areas [m^2] (in that order).
+        Front, side and planform areas [m^2] (in that order).
     coef_drag : FloatScalar
         Baseline drag coefficient.
     coef_sideslip : FloatScalar
@@ -584,6 +650,10 @@ def calculate_aero_forces(
         Oswald efficiency factor e [0-1].
     max_sideslip_angle : FloatScalar
         Beta at maximum lateral force [deg].
+    critical_mach : FloatScalar
+        Critical Mach for onset of wave drag.
+    wave_drag_gain : FloatScalar
+        Wave-drag scaling factor (dimensionless).
 
     Returns
     -------
@@ -596,6 +666,7 @@ def calculate_aero_forces(
         q = calculate_dynamic_pressure(airspeed, air_density)
         alpha = calculate_angle_of_attack(velocity, orientation)
         beta = calculate_angle_of_sideslip(velocity, orientation)
+        mach = calculate_mach_number(airspeed=airspeed, speed_of_sound=speed_of_sound)
 
         drag_axis, side_axis, lift_axis = calculate_aero_axes(velocity, orientation)
 
@@ -638,8 +709,21 @@ def calculate_aero_forces(
             max_angle_deg=max_sideslip_angle,
         )
 
+        coef_wave_drag = calculate_coef_wave_drag(
+            mach=mach,
+            critical_mach=critical_mach,
+            wave_drag_gain=wave_drag_gain,
+        )
+        wave_drag = calculate_wave_drag(
+            coef_wave_drag=coef_wave_drag,
+            dynamic_pressure=q,
+            wing_area=surface_areas[2],
+        )
+
         force_body = (
-            (drag + induced_drag) * drag_axis + lift * lift_axis + sideslip * side_axis
+            (drag + induced_drag + wave_drag) * drag_axis
+            + lift * lift_axis
+            + sideslip * side_axis
         )
         return force_body
 
@@ -745,7 +829,7 @@ def estimate_inertia(mass: FloatScalar, surface_areas: Vector3) -> Vector3:
     mass: FloatScalar
         Body mass [kg].
     surface_areas: Vector3
-        Surface areas of front, side and top areas of body [m^2].
+        Surface areas of front, side and planform areas of body [m^2].
 
     Returns
     -------
