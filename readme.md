@@ -27,7 +27,7 @@
 
 ---
 
-## Overview
+## 📖 Overview
 
 Nimbus is a differentiable flight simulator written in JAX. It supports full 6DOF dynamics and vectorised execution on hardware accelerators for research and education in aerodynamics and control.
 
@@ -37,18 +37,19 @@ Nimbus is a differentiable flight simulator written in JAX. It supports full 6DO
   <img src="media/clip_4.gif" alt="Nimbus demo clip 4" width="32%" />
 </div>
 
-## Features
+## ✨ Features
 
 - ⚡ **Massive Parallelisation**: Simulate millions of aircraft simultaneously on consumer hardware
 - 🎮 **6DOF Flight Model**: Full six degrees of freedom rigid body dynamics
 - 🔄 **Quaternion Rotation Engine**: Singularity-free 3D rotations
 - 🎯 **RK4 Physics Integrator**: Fourth-order Runge-Kutta for high numerical accuracy
 - 🏔️ **Layered Simplex Noise Terrain**: Procedurally generated terrain
+- 💥 **Supersonic Dynamics**: Drag rise from shockwaves at transonic speeds
 - 🌬️ **Atmospheric Modeling**: Exponential atmosphere model with stochastic wind gusts
 - 🛡️ **G-Limiter**: PID G-force limiting
-- 🎮 **3D Visualisation**: Real-time rendering with Ursina engine
+- 🐻 **3D Visualisation**: Real-time rendering with Ursina engine
 
-## Installation
+## 📦 Installation
 
 ```bash
 # Basic installation
@@ -71,7 +72,7 @@ For GPU acceleration (requires compatible OS and GPU):
 pip install --upgrade "jax[cuda12]"
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Single Aircraft Simulation
 
@@ -120,7 +121,7 @@ stepped_states = step_parallel(
 )
 ```
 
-## Demo
+## 🎬 Demo
 
 For a demonstration of Nimbus capabilities, check out the Nimbus demo notebook:
 
@@ -159,7 +160,7 @@ demo.run()
 | **P** | Pause/unpause simulation |
 | **Scroll** | Zoom camera in/out |
 
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 nimbus/
@@ -183,7 +184,7 @@ nimbus/
     └── utils.py        # visualisation utilities
 ```
 
-## Benchmarks
+## 📊 Benchmarks
 
 <div align="center">
   <img src="media/benchmark-results.jpg" alt="Nimbus benchmark results" width="95%" />
@@ -204,7 +205,7 @@ The code used for benchmarking can be found at the end of the demo notebook for 
 
 *Max Throughput: Peak aircraft-steps per second | Sim Time Ratio: Simulated seconds per wall-clock second*
 
-## Citation
+## 📚 Citation
 
 If you use Nimbus in your research, please cite:
 
@@ -217,10 +218,10 @@ If you use Nimbus in your research, please cite:
 }
 ```
 
-## License
+## 📜 License
 
 Apache 2.0 - See [licence](licence) for details.
 
-## Acknowledgments
+## 🌟 Acknowledgments
 
 Built with [JAX](https://github.com/google/jax) • Visualised with [Ursina](https://github.com/pokepetter/ursina)
