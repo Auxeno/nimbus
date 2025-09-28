@@ -14,6 +14,9 @@ class PhysicsConfig:
     gravity: float = 9.80665
     """Standard gravitational acceleration [m/s^2]."""
 
+    speed_of_sound: float = 340.3
+    """Speed of sound at sea level [m/s]."""
+
     rho_0: float = 1.225
     """Air density at sea level [kg/m^3]."""
 
@@ -113,7 +116,7 @@ class AircraftConfig:
     """Aircraft mass [kg]."""
 
     surface_areas: tuple[float, float, float] = (10.0, 20.0, 30.0)
-    """Reference front, side, and wing surface areas [m^2]."""
+    """Reference front, side, and planform surface areas [m^2]."""
 
     max_thrust: float = 50_000.0
     """Maximum available engine thrust [N]."""
@@ -153,6 +156,12 @@ class AircraftConfig:
 
     engine_spool_time: float = 5.0
     """Time to fully spool engine from zero to max thrust [s]."""
+
+    wave_drag_gain: float = 0.15
+    """Scaling factor for wave-drag coefficient."""
+
+    critical_mach: float = 0.8
+    """Critical Mach number where supersonic dynamics begin."""
 
     g_limit_max: float = 9.0
     """Maximum positive G-force limit."""
