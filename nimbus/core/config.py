@@ -121,13 +121,13 @@ class AircraftConfig:
     max_thrust: float = 50_000.0
     """Maximum available engine thrust [N]."""
 
-    max_attack_angle: float = 18.0
+    max_attack_angle: float = 30.0
     """Maximum angle of attack before stall [deg]."""
 
     zero_lift_attack_angle: float = -2.0
     """Angle at which no lift is generated [deg]."""
 
-    lift_slope: float = 8.0
+    lift_slope: float = 6.3
     """Slope of lift curve, roughly 2π for thin airfoil."""
 
     aspect_ratio: float = 5.0
