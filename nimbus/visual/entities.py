@@ -198,6 +198,12 @@ class InputHandler(Entity):
         elif key == "5":
             self.throttle_position = 1.0
 
+    def reset(self) -> None:
+        self.throttle_position = 0.0
+        self.controls = Controls.default()
+        application.paused = False
+        self.paused_text.enabled = False
+
     def get_inputs(self) -> Controls:
         return self.controls
 
@@ -520,6 +526,15 @@ class Trail(Entity):
         self.ribbon.generate()
 
 
+    def reset(self) -> None:
+        self.segments.clear()
+        self.ribbon.path.clear()
+        self.ribbon.rolls.clear()
+        self.ribbon.segment_alphas.clear()
+        self._t = 0.0
+        self.ribbon.generate()
+
+
 class WingtipsTrail(Entity):
     def __init__(
         self,
@@ -555,6 +570,10 @@ class WingtipsTrail(Entity):
         target_alpha = 0.9 * g_norm
         for trail in self.trails:
             trail.default_alpha = target_alpha
+
+    def reset(self) -> None:
+        for trail in self.trails:
+            trail.reset()
 
 
 class TerrainSurface:
@@ -673,6 +692,10 @@ class AircraftEntity(Entity):
             g_force = abs(float(-g_force_vec[2]))
             self.wingtip_trail.set_current_g_force(g_force)
 
+    def reset(self, simulation: Simulation) -> None:
+        self.wingtip_trail.reset()
+        self.update_entity(simulation)
+
 
 class WaypointEntity(Entity):
     def __init__(
@@ -719,6 +742,9 @@ class Coordinator(Entity):
         ursina_config: UrsinaConfig,
     ) -> None:
         super().__init__(visible=False)
+        self._initial_simulation = simulation
+        self._initial_route = route
+
         self.input_handler = InputHandler()
         self.text_ui = TextUI(config=config)
         self.icon_ui = IconUI(config=config, ursina_config=ursina_config)
@@ -759,3 +785,14 @@ class Coordinator(Entity):
             key, self.simulation, self.heightmap, self.route, self.config
         )
         self._update_entities()
+
+    def reset(self) -> None:
+        self.simulation = self._initial_simulation
+        self.route = self._initial_route
+        self.input_handler.reset()
+        self.aircraft_entity.reset(self.simulation)
+        self._update_entities()
+
+    def input(self, key: str) -> None:
+        if key == "r":
+            self.reset()
