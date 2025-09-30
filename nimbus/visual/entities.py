@@ -3,7 +3,6 @@ Module defining Ursina environment entities.
 """
 
 import time
-from dataclasses import replace
 from math import cos, radians, sin
 
 import jax
@@ -32,9 +31,10 @@ from ursina.shaders import lit_with_shadows_shader, unlit_shader
 from ..core.config import SimulationConfig
 from ..core.interface import calculate_g_force
 from ..core.primitives import FLOAT_DTYPE, Matrix, Vector3
-from ..core.simulation import update_controls, step
+from ..core.simulation import step, update_controls
 from ..core.state import Aircraft, Controls, Route, Simulation
 from .config import UrsinaConfig
+from .gamepad import Gamepad
 from .utils import (
     compute_flight_metrics,
     convert_scale,
@@ -120,38 +120,67 @@ class InputHandler(Entity):
             scale=2.0,
             enabled=False,
         )
-        self.throttle_position = 0.0  # Locked throttle position
+        self.throttle_position = 0.0
+        try:
+            self.gamepad = Gamepad()
+        except Exception as exc:
+            print("[INFO] Gamepad not available:", exc)
+            self.gamepad = None
 
     def update(self) -> None:
-        self.controls = Controls.default()
+        throttle = float(np.clip(self.throttle_position, 0.0, 1.0))
+        aileron = 0.0
+        elevator = 0.0
+        rudder = 0.0
 
         if held_keys["q"]:
-            self.controls = replace(
-                self.controls, aileron=jnp.array(-1.0, dtype=FLOAT_DTYPE)
-            )
-        if held_keys["e"]:
-            self.controls = replace(
-                self.controls, aileron=jnp.array(1.0, dtype=FLOAT_DTYPE)
-            )
-        if held_keys["w"]:
-            self.controls = replace(
-                self.controls, elevator=jnp.array(-1.0, dtype=FLOAT_DTYPE)
-            )
-        if held_keys["s"]:
-            self.controls = replace(
-                self.controls, elevator=jnp.array(1.0, dtype=FLOAT_DTYPE)
-            )
-        if held_keys["a"]:
-            self.controls = replace(
-                self.controls, rudder=jnp.array(-1.0, dtype=FLOAT_DTYPE)
-            )
-        if held_keys["d"]:
-            self.controls = replace(
-                self.controls, rudder=jnp.array(1.0, dtype=FLOAT_DTYPE)
-            )
+            aileron = -1.0
+        elif held_keys["e"]:
+            aileron = 1.0
 
-        self.controls = replace(
-            self.controls, throttle=jnp.array(self.throttle_position, dtype=FLOAT_DTYPE)
+        if held_keys["w"]:
+            elevator = -1.0
+        elif held_keys["s"]:
+            elevator = 1.0
+
+        if held_keys["a"]:
+            rudder = -1.0
+        elif held_keys["d"]:
+            rudder = 1.0
+
+        if self.gamepad:
+            inputs = self.gamepad.poll()
+            stick_x, stick_y = inputs.get("l_stick", (0.0, 0.0))
+            deadzone = 0.05
+            if abs(stick_x) < deadzone:
+                stick_x = 0.0
+            if abs(stick_y) < deadzone:
+                stick_y = 0.0
+            aileron = float(np.clip(aileron + stick_x, -1.0, 1.0))
+            elevator = float(np.clip(elevator - stick_y, -1.0, 1.0))
+
+            lb = inputs.get("lb", False)
+            rb = inputs.get("rb", False)
+            if lb and rb:
+                rudder = 0.0
+            elif lb:
+                rudder = -1.0
+            elif rb:
+                rudder = 1.0
+
+            l_trigger = inputs.get("l_trigger", 0.0)
+            r_trigger = inputs.get("r_trigger", 0.0)
+            trigger_deadzone = 0.02
+            if l_trigger > trigger_deadzone or r_trigger > trigger_deadzone:
+                throttle = float(
+                    np.clip(0.5 + 0.5 * r_trigger - 0.5 * l_trigger, 0.0, 1.0)
+                )
+
+        self.controls = Controls(
+            throttle=jnp.array(throttle, dtype=FLOAT_DTYPE),
+            aileron=jnp.array(aileron, dtype=FLOAT_DTYPE),
+            elevator=jnp.array(elevator, dtype=FLOAT_DTYPE),
+            rudder=jnp.array(rudder, dtype=FLOAT_DTYPE),
         )
 
     def input(self, key: str) -> None:
