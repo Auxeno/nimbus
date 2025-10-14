@@ -223,9 +223,37 @@ class TextUI(Entity):
             parent=camera.ui,
         )
 
+        self.controls_text = Text(
+            text="",
+            origin=(0, -1),
+            position=(-0.23, -0.51),
+            color=hex_to_rgba("#FFFFFFAA"),
+            scale=0.8,
+            parent=camera.ui,
+        )
+
+        self.attitude_text = Text(
+            text="",
+            origin=(0, -1),
+            position=(0.28, -0.48),
+            color=hex_to_rgba("#FFFFFFAA"),
+            scale=0.8,
+            parent=camera.ui,
+        )
+
     def update_ui(self, simulation_state: Simulation, heightmap: Matrix) -> None:
         # Flight metrics
-        alpha, speed, g_force, heading, agl, vs = compute_flight_metrics(
+        (
+            alpha,
+            beta,
+            speed,
+            g_force,
+            agl,
+            vs,
+            roll,
+            pitch,
+            yaw,
+        ) = compute_flight_metrics(
             simulation_state.aircraft,
             simulation_state.wind,
             heightmap,
@@ -234,8 +262,29 @@ class TextUI(Entity):
             self.config.map,
         )
         self.flight_info_text.text = (
-            f"α {alpha:4.1f}°\t" + f"S {speed:4.0f} \t" + f"AGL {-agl:4.0f}\n"
-            f"G {g_force:4.1f} \t" + f"H  {heading:03.0f} \t" + f"VS  {vs:+4.0f}"
+            f"G {g_force:4.1f}\t" + f"α {alpha:4.1f}°\t" + f"TAS {speed:4.0f}\n"
+            f"VS {vs:+4.0f}\t" + f"β {beta:+4.1f}°\t" + f"AGL {-agl:4.0f}"
+        )
+
+        controls = simulation_state.aircraft.controls
+        pitch_val = float(pitch)
+        roll_val = float(roll)
+        yaw_val = float(yaw)
+        self.controls_text.text = "\n".join(
+            [
+                f"{float(controls.throttle):+5.1f} {'THR':<3}",
+                f"{float(controls.aileron):+5.1f} {'AIL':<3}",
+                f"{float(controls.elevator):+5.1f} {'ELE':<3}",
+                f"{float(controls.rudder):+5.1f} {'RUD':<3}",
+            ]
+        )
+
+        self.attitude_text.text = "\n".join(
+            [
+                f"{pitch_val:+5.0f}° {'Pitch':<5}",
+                f"{roll_val:+5.0f}° {'Roll':<5}",
+                f"{yaw_val:+5.0f}° {'Yaw':<5}",
+            ]
         )
 
 
@@ -524,7 +573,6 @@ class Trail(Entity):
 
         # Rebuild mesh
         self.ribbon.generate()
-
 
     def reset(self) -> None:
         self.segments.clear()

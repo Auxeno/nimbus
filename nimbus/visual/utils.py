@@ -294,7 +294,17 @@ def compute_flight_metrics(
     aircraft_config: AircraftConfig,
     physics_config: PhysicsConfig,
     map_config: MapConfig,
-) -> tuple[FloatScalar, FloatScalar, FloatScalar, FloatScalar, FloatScalar, FloatScalar]:
+) -> tuple[
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+    FloatScalar,
+]:
     # Mach number
     vel = aircraft.body.velocity
     speed = norm_3(vel)
@@ -304,12 +314,19 @@ def compute_flight_metrics(
         physics.calculate_angle_of_attack(aircraft.body.velocity, aircraft.body.orientation)
     )
 
+    # Angle of sideslip (beta)
+    beta = jnp.rad2deg(
+        physics.calculate_angle_of_sideslip(aircraft.body.velocity, aircraft.body.orientation)
+    )
+
     # G-force
     g = -calculate_g_force(aircraft, wind, aircraft_config, physics_config)[2]
 
     # Heading
-    yaw, _, _ = quaternion.to_euler_zyx(aircraft.body.orientation)
-    heading = jnp.mod((jnp.rad2deg(yaw) + 360), 360.0)
+    yaw, pitch, roll = quaternion.to_euler_zyx(aircraft.body.orientation)
+    roll_deg = jnp.rad2deg(roll)
+    pitch_deg = jnp.rad2deg(pitch)
+    yaw_deg = jnp.mod(jnp.rad2deg(yaw) + 180.0, 360.0) - 180.0
 
     # AGL (height above ground level)
     agl = spatial.calculate_height_diff(
@@ -323,4 +340,4 @@ def compute_flight_metrics(
     # VS (vertical speed) - negative of down component since positive means climbing
     vs = -aircraft.body.velocity[2]
 
-    return alpha, speed, g, heading, agl, vs
+    return alpha, beta, speed, g, agl, vs, roll_deg, pitch_deg, yaw_deg
