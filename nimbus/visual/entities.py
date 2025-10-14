@@ -120,7 +120,7 @@ class InputHandler(Entity):
             scale=2.0,
             enabled=False,
         )
-        self.throttle_position = 0.0
+        self.throttle_position = 0.5
         try:
             self.gamepad = Gamepad()
         except Exception as exc:
@@ -199,7 +199,7 @@ class InputHandler(Entity):
             self.throttle_position = 1.0
 
     def reset(self) -> None:
-        self.throttle_position = 0.0
+        self.throttle_position = 0.5
         self.controls = Controls.default()
         application.paused = False
         self.paused_text.enabled = False
@@ -524,7 +524,6 @@ class Trail(Entity):
 
         # Rebuild mesh
         self.ribbon.generate()
-
 
     def reset(self) -> None:
         self.segments.clear()
